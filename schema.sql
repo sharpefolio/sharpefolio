@@ -4,7 +4,7 @@ CREATE  TABLE `sharpefolio`.`prices` (
   `date` date NOT NULL ,
   `closing_price` double(10,4) UNSIGNED NOT NULL ,
   `change` double(14,8) NOT NULL DEFAULT 0 ,
-  PRIMARY KEY (`id`, `stock_id`, `date`),
+  PRIMARY KEY (`id`),
   UNIQUE KEY `unique_price` (`stock_id`, `date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -12,7 +12,8 @@ CREATE TABLE `stocks` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `symbol` varchar(50) NOT NULL,
   `company` varchar(200) DEFAULT NULL,
-  PRIMARY KEY (`id`,`symbol`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_symbol` (`symbol`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `reports` (
@@ -30,7 +31,7 @@ CREATE TABLE `ratios` (
   `report_id` int(11) NOT NULL,
   `ratio` double(10,6),
   PRIMARY KEY (`id`),
-  UNIQUE KEY (`stock_id`, `report_id`),
+  UNIQUE KEY `unique_stock_report` (`stock_id`, `report_id`),
   KEY `ratio` (`ratio`),
   KEY `report_id` (`report_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -42,7 +43,8 @@ CREATE TABLE `picks` (
   `stock_id` int(11) NOT NULL,
   `gain` double(10,6),
   `weight` double(10,6),
-  PRIMARY KEY (`id`, `recipe_id`, `stock_id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_recipe_stock` (`recipe_id`, `stock_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `recipes` (
