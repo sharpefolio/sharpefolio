@@ -4,3 +4,4 @@ data/*
 tmp/*
 test.sqlite
 .vagrant/*
+variables.json
