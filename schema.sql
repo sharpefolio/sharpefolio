@@ -6,7 +6,7 @@ CREATE  TABLE `sharpefolio`.`prices` (
   `change` double(14,8) NOT NULL DEFAULT 0 ,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_price` (`stock_id`, `date`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `stocks` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -14,7 +14,7 @@ CREATE TABLE `stocks` (
   `company` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_symbol` (`symbol`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `reports` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -23,7 +23,7 @@ CREATE TABLE `reports` (
   `formula` varchar(50) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_report` (`date`, `duration`, `formula`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `ratios` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -34,7 +34,7 @@ CREATE TABLE `ratios` (
   UNIQUE KEY `unique_stock_report` (`stock_id`, `report_id`),
   KEY `ratio` (`ratio`),
   KEY `report_id` (`report_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `picks` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -45,7 +45,7 @@ CREATE TABLE `picks` (
   `weight` double(10,6),
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_recipe_stock` (`recipe_id`, `stock_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `recipes` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -55,4 +55,4 @@ CREATE TABLE `recipes` (
   `report_duration` int(11) NOT NULL,
   `report_formula` varchar(30) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
