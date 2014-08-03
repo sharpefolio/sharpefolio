@@ -28,6 +28,31 @@ http://en.wikipedia.org/wiki/Sortino_ratio
  - `sudo apt-get install build-essential python-dev libmysqlclient-dev`
  - `pip install -r pip-dependencies` (replace with `setup.py` later?)
 
+## Virtualenv
+
+ - `mkvirtualenv sharpefolio`
+ - `workon sharpefolio`
+
+## Stock Lists
+
+Grab nasdaqlisted.txt and otherlisted.txt from the following url:
+
+ - [http://www.nasdaqtrader.com/trader.aspx?id=symboldirdefs#nasdaq](http://www.nasdaqtrader.com/trader.aspx?id=symboldirdefs#nasdaq)
+
+## MySQL Credentials
+
+Create `variables.json` file at the root of the repo (it's git-ignored) and add the needed information.
+
+~~~~
+{
+    "mysql_host":     "…",
+    "mysql_user":     "…",
+    "mysql_password": "…",
+    "mysql_database": "…"
+}
+
+~~~~
+
 ## DISCLAIMER
 
 Copyright (c) 2013-2014, [Melvin Tercan](https://github.com/melvinmt), [Lorenzo Pisani](https://github.com/Zeelot)
