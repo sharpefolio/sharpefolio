@@ -56,3 +56,14 @@ CREATE TABLE `recipes` (
   `report_formula` varchar(30) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `yahoo_sync_logs` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `stock_id` INT UNSIGNED NOT NULL,
+  `year` INT UNSIGNED NOT NULL,
+  `month` INT UNSIGNED NOT NULL,
+  `is_successful` TINYINT(1) UNSIGNED NOT NULL,
+  `log` TEXT,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_stock_month_log` (`stock_id`, `year`, `month`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
