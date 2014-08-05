@@ -1,4 +1,4 @@
-CREATE  TABLE `sharpefolio`.`prices` (
+CREATE  TABLE `prices` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT ,
   `stock_id` INT NOT NULL ,
   `date` date NOT NULL ,
