@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+
+# This script is a quick hack only being committed for reference. It should
+# never be needed again.
+# The old version of this app used to store logs locally and this script takes
+# the local logs and inserts them into the MySQL table. This script does not try
+# to handle any duplicate keys or other errors.
+
+import sys,os
+# Add the root of the repo to the include path.
+sys.path.append(os.path.abspath('.'))
+
+import MySQLdb
+import datetime
+import dateutil.relativedelta
+import json
+import StringIO
+from subprocess import Popen, PIPE
+from sharpefolio import yahoo_sync_logs
+from sharpefolio import stocks
+
+json_data = open('variables.json')
+variables = json.load(json_data)
+
+connection = MySQLdb.connect(
+    host   = variables['mysql_host'],
+    user   = variables['mysql_user'],
+    passwd = variables['mysql_password'],
+    db     = variables['mysql_database']
+)
+
+yahoo_sync_log_repository = yahoo_sync_logs.YahooSyncLogMysqlRepository(connection)
+yahoo_sync_log_mapper = yahoo_sync_logs.YahooSyncLogMapper(yahoo_sync_log_repository)
+
+stock_repository = stocks.StockMysqlRepository(connection)
+stock_mapper = stocks.StockMapper(stock_repository)
+
+p = Popen('find logs/ -name "*.json"', stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+output, err = p.communicate()
+
+for log_file in StringIO.StringIO(output):
+    log_file = log_file.rstrip('\n')
+    data = json.load(open(log_file))
+
+    # logs/2014-02/NE.json
+    parts = log_file.split('/')
+    stock_symbol = parts[2].rstrip('.json')
+    year = parts[1].split('-')[0]
+    month = parts[1].split('-')[1]
+
+    print stock_symbol, log_file
+
+    stock_id = stock_mapper.find_by_symbol(stock_symbol).id
+
+    is_successful = data['ran_perfectly']
+    log = {
+        'errors': data['errors']
+    }
+
+    print stock_id, year, month, is_successful, log
+
+    model = yahoo_sync_logs.YahooSyncLog(stock_id, year, month, is_successful, log)
+    yahoo_sync_log_mapper.insert(model)
+
+    os.rename(log_file, '%s.old' % (log_file,))
