@@ -12,6 +12,7 @@ import urllib2
 import urllib
 import json
 from sharpefolio import stocks
+from sharpefolio import yahoo_sync_logs
 
 def parseDateArg(string):
     return datetime.datetime.strptime("%s" % string, "%Y-%m-%d").date()
@@ -34,6 +35,10 @@ stock_mapper = stocks.StockMapper(stock_repository)
 price_repository = stocks.PriceMysqlRepository(connection)
 price_mapper = stocks.PriceMapper(price_repository)
 
+# For logging
+yahoo_sync_log_repository = yahoo_sync_logs.YahooSyncLogMysqlRepository(connection)
+yahoo_sync_log_mapper = yahoo_sync_logs.YahooSyncLogMapper(yahoo_sync_log_repository)
+
 parser = argparse.ArgumentParser(description='Sync with the prices from the yahoo finance API.')
 
 yesterday = datetime.datetime.now().date() - datetime.timedelta(days=1)
@@ -54,25 +59,21 @@ while startDate < endDate:
     newDate = startDate
     newDatePlusOne = newDate + dateutil.relativedelta.relativedelta(months=1)
 
-    result_dir = "logs/%04d-%02d" % (newDate.year, newDate.month)
-    # Create any missing directory.
-    if not os.path.exists(result_dir):
-        os.makedirs(result_dir)
-
     stocks_collection = stock_mapper.find_all()
 
     for stock in stocks_collection:
-        result_file = "%s/%s.json" % (result_dir, stock.symbol)
-        if os.path.exists(result_file):
-            result_data = json.load(open(result_file))
-            if result_data['ran_perfectly']:
+        log_model = yahoo_sync_log_mapper.find_by_stock_year_and_month(stock.id, newDate.year, newDate.month)
+        if log_model != None:
+            if log_model.is_successful:
                 print '(%d - %s - %04d-%02d) skipping because it already ran' % (stock.id, stock.symbol, newDate.year, newDate.month)
                 continue # No need to run again!
-
-        new_result_data = {
-            "ran_perfectly": True, # Start with this being a perfect run.
-            "errors": [],
-        }
+        else:
+            log_model = yahoo_sync_logs.YahooSyncLog(
+                stock_id = stock.id,
+                year = newDate.year,
+                month = newDate.month,
+                is_successful = True
+            )
 
         try:
             params['q'] = query % (stock.symbol, newDate.year, newDate.month, newDatePlusOne.year, newDatePlusOne.month)
@@ -84,36 +85,34 @@ while startDate < endDate:
             raise e
         else:
             if data['query']['results'] == None:
-                new_result_data['ran_perfectly'] = False
-                new_result_data['errors'].append('(%d) skipping empty result %s for %s' % (stock.id, stock.symbol, newDate.year))
+                log_model.append_error_log('(%d) skipping empty result %s for %s' % (stock.id, stock.symbol, newDate.year))
                 print '(%d) skipping empty result %s for %s' % (stock.id, stock.symbol, newDate.year)
                 # Save the result for this stock.
-                with open(result_file, 'w+') as outfile:
-                    json.dump(new_result_data, outfile, indent = 4, separators = (',', ': '))
+                yahoo_sync_log_mapper.save(log_model)
                 continue
 
             for info in data['query']['results']['quote']:
                 try:
                     close = info['Adj_Close']
                     date = datetime.datetime.strptime(info['Date'], '%Y-%m-%d')
+                    if date.month > newDate.month:
+                        # Skip the first day of the next month to avoid duplicate inserts.
+                        continue;
                     price = stocks.Price(stock.id, date, close, 0)
                     price_mapper.insert(price)
                 except Exception, e:
-                    new_result_data['ran_perfectly'] = False
-                    new_result_data['errors'].append('(%d) error inserting %s for %d (%s)' % (stock.id, stock.symbol, newDate.year, e))
+                    log_model.append_error_log('(%d) error inserting %s for %d (%s)' % (stock.id, stock.symbol, newDate.year, e))
                     print '(%d) error inserting %s for %d (%s)' % (stock.id, stock.symbol, newDate.year, e)
                     pass
                 except urllib2.HTTPError, e:
-                    new_result_data['ran_perfectly'] = False
-                    new_result_data['errors'].append('(%d) HTTP Error %s' % (stock.id, e))
+                    log_model.append_error_log('(%d) HTTP Error %s' % (stock.id, e))
                     print '(%d) HTTP Error %s' % (stock.id, e)
                     raise e
                 else:
                     print '(%d) successfully imported %s for %d-%d-%d' % (stock.id, stock.symbol, date.year, date.month, date.day)
 
         # Save the result for this stock.
-        with open(result_file, 'w+') as outfile:
-            json.dump(new_result_data, outfile, indent = 4, separators = (',', ': '))
+        yahoo_sync_log_mapper.save(log_model)
 
     # Increment the new start date after each month has been synced.
     startDate = newDatePlusOne
