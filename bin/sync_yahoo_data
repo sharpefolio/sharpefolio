@@ -62,6 +62,7 @@ while startDate < endDate:
     stocks_collection = stock_mapper.find_all()
 
     for stock in stocks_collection:
+        log_model = None
         log_model = yahoo_sync_log_mapper.find_by_stock_year_and_month(stock.id, newDate.year, newDate.month)
         if log_model != None:
             if log_model.is_successful:
@@ -74,6 +75,8 @@ while startDate < endDate:
                 month = newDate.month,
                 is_successful = True
             )
+
+        log_model.reset_error_log()
 
         try:
             params['q'] = query % (stock.symbol, newDate.year, newDate.month, newDatePlusOne.year, newDatePlusOne.month)

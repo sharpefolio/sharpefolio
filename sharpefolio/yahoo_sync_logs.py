@@ -16,6 +16,11 @@ class YahooSyncLog(object):
         if set_failed:
             self.is_successful = False
 
+    def reset_error_log(self, update_is_successful = False):
+        self.log['errors'] = []
+        if update_is_successful:
+            self.is_successful = True
+
 
 class YahooSyncLogMapper(dm.Mapper):
     def save(self, model):
@@ -97,5 +102,10 @@ class YahooSyncLogMysqlRepository(dm.MysqlRepository):
         data['year'] = int(data['year'])
         data['month'] = int(data['month'])
         data['is_successful'] = data['is_successful'] == 1
-        data['log'] = json.loads(data['log'])
+        try:
+            data['log'] = json.loads(data['log'])
+        except ValueError:
+            # Default to the empty list if we have json parsing errors.
+            data['log'] = {'errors': []}
+
         return data
