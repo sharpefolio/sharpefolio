@@ -65,5 +65,6 @@ CREATE TABLE `yahoo_sync_logs` (
   `is_successful` TINYINT(1) UNSIGNED NOT NULL,
   `log` TEXT,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_stock_month_log` (`stock_id`, `year`, `month`)
+  UNIQUE KEY `unique_stock_month_log` (`stock_id`, `year`, `month`),
+  KEY `is_successful` (`is_successful`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

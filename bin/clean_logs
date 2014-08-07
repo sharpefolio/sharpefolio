@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+# This script is a quick hack only being committed for reference. It should
+# never be needed again.
+# The script looks through logs and tries to more intelligently decide if they
+# are real errors or if they are things like duplicate keys which do not
+# indicate a stock price import failed.
+
+import sys,os
+# Add the root of the repo to the include path.
+sys.path.append(os.path.abspath('.'))
+
+import MySQLdb
+import json
+from sharpefolio import yahoo_sync_logs
+
+json_data = open('variables.json')
+variables = json.load(json_data)
+
+connection = MySQLdb.connect(
+    host   = variables['mysql_host'],
+    user   = variables['mysql_user'],
+    passwd = variables['mysql_password'],
+    db     = variables['mysql_database']
+)
+
+yahoo_sync_log_repository = yahoo_sync_logs.YahooSyncLogMysqlRepository(connection)
+yahoo_sync_log_mapper = yahoo_sync_logs.YahooSyncLogMapper(yahoo_sync_log_repository)
+
+for x in xrange(50):
+    print x
+    for log_model in yahoo_sync_log_mapper.find_all_failed(limit = 1000, offset = x * 1000):
+        if log_model.has_only_duplicate_key_errors():
+            log_model.reset_error_log(update_is_successful = True)
+            print log_model.is_successful, log_model.log
+
+        if not log_model.log['errors']:
+            print 'saving'
+            yahoo_sync_log_mapper.save(log_model)
