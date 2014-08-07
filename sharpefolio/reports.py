@@ -121,6 +121,9 @@ class RecipeMapper(dm.Mapper):
 	def insert(self, model):
 		self._repository.insert(model)
 
+	def truncate(self):
+		self._repository.truncate()
+
 class RecipeMysqlRepository(dm.MysqlRepository):
 	def insert(self, model):
 		cursor = self._database.cursor()
@@ -137,6 +140,11 @@ class RecipeMysqlRepository(dm.MysqlRepository):
 		)
 		self._database.commit()
 		model.id = cursor.lastrowid
+
+	def truncate(self):
+		cursor = self._database.cursor()
+		cursor.execute('TRUNCATE recipes')
+		self._database.commit()
 
 class Pick(object):
 	def __init__(self, recipe_id, report_id, stock_id, weight, id=None):

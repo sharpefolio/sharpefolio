@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+
+# Populate the recipes table with different combinations. Replaces existing recipes.
+import sys,os
+# Add the root of the repo to the include path.
+sys.path.append(os.path.abspath('.'))
+import MySQLdb
+import json
+import math
+from sharpefolio import reports
+
+json_data = open('variables.json')
+variables = json.load(json_data)
+
+connection = MySQLdb.connect(
+    host   = variables['mysql_host'],
+    user   = variables['mysql_user'],
+    passwd = variables['mysql_password'],
+    db     = variables['mysql_database']
+)
+
+# Set up recipe mapper
+recipe_repository = reports.RecipeMysqlRepository(connection)
+recipe_mapper = reports.RecipeMapper(recipe_repository)
+
+def days(n, type="days"):
+	if type == "week" or type == "weeks":
+		n *= 5
+	if type == "month" or type == "months":
+		n *= 5 * 4
+	if type == "year" or type == "years":
+		n *= 5 * 52
+	return math.ceil(n)
+
+combos = {
+			'n_stocks': list(range(4, 30)),
+			'check_correlation': [True, False],
+			'distribution': ['even', 'ratio'],
+			'report_duration': [days(1, "week"), days(2, "weeks"), days(3, "weeks"), days(1, "month"), days(3, "months"), days(6, "months"), days(1, "year"), days(2, "years")],
+			'report_formula': ['sharpe', 'sortino']
+		}
+
+# Truncate recipes table first.
+recipe_mapper.truncate()
+
+for n_stocks in combos['n_stocks']:
+		for check_correlation in combos['check_correlation']:
+			for distribution in combos['distribution']:
+				for report_duration in combos['report_duration']:
+					for report_formula in combos['report_formula']:
+						recipe = reports.Recipe(report_formula, report_duration, n_stocks, check_correlation, distribution)
+						recipe_mapper.insert(recipe)
+						print "inserted recipe for", "formula:", report_formula, "duration:", report_duration, "n_stocks:", n_stocks, "correlation:", check_correlation, "distribution:", distribution
+
