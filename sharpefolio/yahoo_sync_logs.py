@@ -21,6 +21,12 @@ class YahooSyncLog(object):
         if update_is_successful:
             self.is_successful = True
 
+    def has_only_duplicate_key_errors(self):
+        for entry in self.log['errors']:
+            if 'Duplicate entry' not in entry:
+                return False
+
+        return True
 
 class YahooSyncLogMapper(dm.Mapper):
     def save(self, model):
@@ -31,6 +37,9 @@ class YahooSyncLogMapper(dm.Mapper):
 
     def find_by_stock_year_and_month(self, stock_id, year, month):
         return self._repository.find_by_stock_year_and_month(stock_id, year, month)
+
+    def find_all_failed(self, limit = 100, offset = 0):
+        return self._repository.find_all_failed(limit, offset)
 
 class YahooSyncLogMysqlRepository(dm.MysqlRepository):
     def save(self, model):
@@ -96,6 +105,21 @@ class YahooSyncLogMysqlRepository(dm.MysqlRepository):
         collection = dm.Collection(YahooSyncLog, cursor, self._datamap)
         for item in collection:
             return item
+
+    def find_all_failed(self, limit = 100, offset = 0):
+        cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
+        cursor.execute('\
+            SELECT * FROM `yahoo_sync_logs`\
+            WHERE `is_successful` = 0\
+            ORDER BY `id` ASC\
+            LIMIT %s OFFSET %s',
+            (
+                limit,
+                offset
+            )
+        )
+
+        return dm.Collection(YahooSyncLog, cursor, self._datamap)
 
     def _datamap(self, data):
         data['is_successful'] = int(data['is_successful'])
