@@ -1,0 +1,106 @@
+#!/usr/bin/env python
+
+import sys,os
+# Add the root of the repo to the include path.
+sys.path.append(os.path.abspath('.'))
+
+import MySQLdb
+import argparse
+import datetime
+import dateutil.relativedelta
+import urllib2
+import urllib
+import json
+from sharpefolio import benchmarks
+from sharpefolio import yahoo_sync_logs
+
+def parseDateArg(string):
+    return datetime.datetime.strptime("%s" % string, "%Y-%m-%d").date()
+
+json_data = open('variables.json')
+variables = json.load(json_data)
+
+connection = MySQLdb.connect(
+    host   = variables['mysql_host'],
+    user   = variables['mysql_user'],
+    passwd = variables['mysql_password'],
+    db     = variables['mysql_database']
+)
+
+# Set up benchmark mapper
+benchmark_repository = benchmarks.BenchmarkMysqlRepository(connection)
+benchmark_mapper = benchmarks.BenchmarkMapper(benchmark_repository)
+
+# Set up price mapper
+price_repository = benchmarks.PriceMysqlRepository(connection)
+price_mapper = benchmarks.PriceMapper(price_repository)
+
+# For logging
+yahoo_sync_log_repository = yahoo_sync_logs.YahooSyncLogMysqlRepository(connection)
+yahoo_sync_log_mapper = yahoo_sync_logs.YahooSyncLogMapper(yahoo_sync_log_repository)
+
+parser = argparse.ArgumentParser(description='Sync with the prices from the yahoo finance API.')
+
+yesterday = datetime.datetime.now().date() - datetime.timedelta(days=1)
+
+parser.add_argument('startDate', type=parseDateArg)
+parser.add_argument('--endDate', type=parseDateArg, default=yesterday)
+
+args = parser.parse_args()
+
+url = 'http://query.yahooapis.com/v1/public/yql?'
+params = {'format': 'json', 'env': 'store://datatables.org/alltableswithkeys', 'q': None}
+query = 'select * from yahoo.finance.historicaldata where symbol = "%s" and startDate = "%04d-%02d-1" and endDate = "%04d-%02d-1"'
+
+startDate = args.startDate
+endDate = args.endDate
+
+while startDate < endDate:
+    newDate = startDate
+    newDatePlusOne = newDate + dateutil.relativedelta.relativedelta(months=1)
+
+    benchmark_collection = benchmark_mapper.find_all()
+
+    for benchmark in benchmark_collection:
+
+        try:
+            params['q'] = query % (benchmark.symbol, newDate.year, newDate.month, newDatePlusOne.year, newDatePlusOne.month)
+            print(params['q'])
+            result = urllib2.urlopen(url+urllib.urlencode(params))
+            data = json.load(result)
+        except urllib2.HTTPError, e:
+            print 'HTTP Error:', e, url+urllib.urlencode(params)
+            raise e
+        else:
+            if data['query']['results'] == None:
+                log_model.append_error_log('(%d) skipping empty result %s for %s' % (benchmark.id, benchmark.symbol, newDate.year))
+                print '(%d) skipping empty result %s for %s' % (benchmark.id, benchmark.symbol, newDate.year)
+                # Save the result for this benchmark.
+                yahoo_sync_log_mapper.save(log_model)
+                continue
+
+            for info in data['query']['results']['quote']:
+                try:
+                    close = info['Adj_Close']
+                    date = datetime.datetime.strptime(info['Date'], '%Y-%m-%d')
+                    if date.month > newDate.month:
+                        # Skip the first day of the next month to avoid duplicate inserts.
+                        continue;
+                    price = benchmarks.Price(benchmark.id, date, close, 0)
+                    price_mapper.insert(price)
+                except Exception, e:
+                    log_model.append_error_log('(%d) error inserting %s for %d (%s)' % (benchmark.id, benchmark.symbol, newDate.year, e))
+                    print '(%d) error inserting %s for %d (%s)' % (benchmark.id, benchmark.symbol, newDate.year, e)
+                    pass
+                except urllib2.HTTPError, e:
+                    log_model.append_error_log('(%d) HTTP Error %s' % (benchmark.id, e))
+                    print '(%d) HTTP Error %s' % (benchmark.id, e)
+                    raise e
+                else:
+                    print '(%d) successfully imported %s for %d-%d-%d' % (benchmark.id, benchmark.symbol, date.year, date.month, date.day)
+
+        # Save the result for this benchmark.
+        yahoo_sync_log_mapper.save(log_model)
+
+    # Increment the new start date after each month has been synced.
+    startDate = newDatePlusOne

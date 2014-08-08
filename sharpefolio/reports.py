@@ -121,6 +121,9 @@ class RecipeMapper(dm.Mapper):
 	def insert(self, model):
 		self._repository.insert(model)
 
+	def find_all(self):
+		return self._repository.find_all()
+
 	def truncate(self):
 		self._repository.truncate()
 
@@ -140,6 +143,12 @@ class RecipeMysqlRepository(dm.MysqlRepository):
 		)
 		self._database.commit()
 		model.id = cursor.lastrowid
+
+	def find_all(self):
+		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
+		cursor.execute('SELECT * FROM `recipes`')
+		return dm.Collection(Report, cursor, self._datamap)
+
 
 	def truncate(self):
 		cursor = self._database.cursor()

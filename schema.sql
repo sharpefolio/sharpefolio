@@ -68,3 +68,20 @@ CREATE TABLE `yahoo_sync_logs` (
   UNIQUE KEY `unique_stock_month_log` (`stock_id`, `year`, `month`),
   KEY `is_successful` (`is_successful`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `benchmarks` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `symbol` varchar(50) NOT NULL,  
+  `name` varchar(50) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_symbol` (`symbol`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `benchmark_prices` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `benchmark_id` int(11) unsigned NOT NULL,
+  `date` date NOT NULL,
+  `closing_price` double(10,4) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_price` (`stock_id`,`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
