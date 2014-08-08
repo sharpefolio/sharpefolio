@@ -73,10 +73,8 @@ while startDate < endDate:
             raise e
         else:
             if data['query']['results'] == None:
-                log_model.append_error_log('(%d) skipping empty result %s for %s' % (benchmark.id, benchmark.symbol, newDate.year))
                 print '(%d) skipping empty result %s for %s' % (benchmark.id, benchmark.symbol, newDate.year)
                 # Save the result for this benchmark.
-                yahoo_sync_log_mapper.save(log_model)
                 continue
 
             for info in data['query']['results']['quote']:
@@ -89,18 +87,13 @@ while startDate < endDate:
                     price = benchmarks.Price(benchmark.id, date, close, 0)
                     price_mapper.insert(price)
                 except Exception, e:
-                    log_model.append_error_log('(%d) error inserting %s for %d (%s)' % (benchmark.id, benchmark.symbol, newDate.year, e))
                     print '(%d) error inserting %s for %d (%s)' % (benchmark.id, benchmark.symbol, newDate.year, e)
                     pass
                 except urllib2.HTTPError, e:
-                    log_model.append_error_log('(%d) HTTP Error %s' % (benchmark.id, e))
                     print '(%d) HTTP Error %s' % (benchmark.id, e)
                     raise e
                 else:
                     print '(%d) successfully imported %s for %d-%d-%d' % (benchmark.id, benchmark.symbol, date.year, date.month, date.day)
-
-        # Save the result for this benchmark.
-        yahoo_sync_log_mapper.save(log_model)
 
     # Increment the new start date after each month has been synced.
     startDate = newDatePlusOne
