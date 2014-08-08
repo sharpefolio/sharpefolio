@@ -77,6 +77,11 @@ CREATE TABLE `benchmarks` (
   UNIQUE KEY `unique_symbol` (`symbol`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+INSERT INTO `benchmarks` (`id`, `symbol`, `name`)
+VALUES
+  (1, '^GSPC', 'S&P 500'),
+  (2, '^TNX', '10-year U.S. Treasury Bonds');
+
 CREATE TABLE `benchmark_prices` (
   `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `benchmark_id` int(11) unsigned NOT NULL,
@@ -85,3 +90,4 @@ CREATE TABLE `benchmark_prices` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_price` (`stock_id`,`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
