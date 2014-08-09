@@ -44,19 +44,16 @@ ratio_repository = reports.RatioMysqlRepository(connection)
 ratio_mapper = reports.RatioMapper(ratio_repository)
 
 recipes_collection = recipe_mapper.find_all()
-
 stocks_collection = stock_mapper.find_all()
 
 two_yrs_ago = datetime.datetime.now().date() - datetime.timedelta(days=5*52*2)
+print "until:", two_yrs_ago
 
 for recipe in recipes_collection.loop():
 
     today = datetime.datetime.now().date()
 
-    print "until:", two_yrs_ago
     while today != two_yrs_ago:
-
-        today -= datetime.timedelta(days=1)
 
         for stock in stocks_collection.loop():
             prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, today, limit=recipe.report_duration)
@@ -87,6 +84,8 @@ for recipe in recipes_collection.loop():
             except Exception, e:
                 print 'error inserting recipe: %d for stock: %d for day: %s (%s)' % (recipe.id, stock.id, first_price.date, e)
                 pass
+
+            today -= datetime.timedelta(days=1)
 
             # Only do 1 stock for now.
             break
