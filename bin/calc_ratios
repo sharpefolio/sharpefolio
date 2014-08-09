@@ -74,8 +74,6 @@ for recipe in recipes_collection.loop():
             else:
                 value = ratio.sortino()
 
-            # print 'calculating %s ratio %d for %s (%s - %d days): %f' % (report.formula, report.id, stock.symbol, report.date, report.duration, value)
-
             ratio_entry = reports.Ratio(stock.id, recipe.id, value, first_price.date.strftime('%Y-%m-%d'))
 
             try:
