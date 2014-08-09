@@ -76,7 +76,7 @@ while startDate < endDate:
                 is_successful = True
             )
 
-        log_model.reset_error_log()
+        log_model.reset_error_log(update_is_successful = True)
 
         try:
             params['q'] = query % (stock.symbol, newDate.year, newDate.month, newDatePlusOne.year, newDatePlusOne.month)
@@ -103,6 +103,10 @@ while startDate < endDate:
                         continue;
                     price = stocks.Price(stock.id, date, close, 0)
                     price_mapper.insert(price)
+                except MySQLdb.IntegrityError, e:
+                    # Only fail the sync if this is not a duplicate entry error
+                    log_model.append_error_log('(%d) error inserting %s for %d (%s)' % (stock.id, stock.symbol, newDate.year, e), set_failed = e[0] != 1062)
+                    print '(%d) error inserting %s for %d (%s)' % (stock.id, stock.symbol, newDate.year, e)
                 except Exception, e:
                     log_model.append_error_log('(%d) error inserting %s for %d (%s)' % (stock.id, stock.symbol, newDate.year, e))
                     print '(%d) error inserting %s for %d (%s)' % (stock.id, stock.symbol, newDate.year, e)
