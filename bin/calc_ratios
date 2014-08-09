@@ -52,13 +52,24 @@ two_yrs_ago = datetime.datetime.now().date() - datetime.timedelta(days=5*52*2)
 for recipe in recipes_collection.loop():
 
     today = datetime.datetime.now().date()
-    while today is not two_yrs_ago:
+
+    print "until:", two_yrs_ago
+    while today != two_yrs_ago:
 
         today -= datetime.timedelta(days=1)
 
         for stock in stocks_collection.loop():
             prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, today, limit=recipe.report_duration)
             prices = [price.closing_price for price in prices_collection.loop()]
+
+            first_price = None
+            for price in prices_collection.loop():
+                first_price = price
+                break
+
+            if first_price == None:
+                print 'no prices found for recipe: %d for stock: %d for day %s' % (recipe.id, stock.id, today)
+                continue
 
             ratio = calc.Ratio(prices)
             if (recipe.report_formula == 'sharpe'):
@@ -68,12 +79,13 @@ for recipe in recipes_collection.loop():
 
             # print 'calculating %s ratio %d for %s (%s - %d days): %f' % (report.formula, report.id, stock.symbol, report.date, report.duration, value)
 
-            ratio_entry = reports.Ratio(stock.id, recipe.id, value, today.strftime('%Y-%m-%d'))
+            ratio_entry = reports.Ratio(stock.id, recipe.id, value, first_price.date.strftime('%Y-%m-%d'))
 
             try:
                 ratio_mapper.insert(ratio_entry)
+                print 'inserted recipe: %d for stock: %d for day: %s value: %f' % (recipe.id, stock.id, first_price.date, value)
             except Exception, e:
-                print 'error inserting recipe: %d for stock: %d for day %s (%s)' % (recipe.id, stock.id, today, e)
+                print 'error inserting recipe: %d for stock: %d for day: %s (%s)' % (recipe.id, stock.id, first_price.date, e)
                 pass
 
             # Only do 1 stock for now.
