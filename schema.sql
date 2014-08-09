@@ -28,12 +28,12 @@ CREATE TABLE `reports` (
 CREATE TABLE `ratios` (
   `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
   `stock_id` INT UNSIGNED NOT NULL,
-  `report_id` INT UNSIGNED NOT NULL,
+  `recipe_id` INT UNSIGNED NOT NULL,
   `ratio` double(10,6),
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_stock_report` (`stock_id`, `report_id`),
+  UNIQUE KEY `unique_stock_report` (`stock_id`, `recipe_id`),
   KEY `ratio` (`ratio`),
-  KEY `report_id` (`report_id`)
+  KEY `recipe_id` (`recipe_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE `picks` (
@@ -90,4 +90,12 @@ CREATE TABLE `benchmark_prices` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_price` (`stock_id`,`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+/* 16:45:13 SharpeDB */ ALTER TABLE `ratios` CHANGE `report_id` `recipe_id` INT(11)  UNSIGNED  NOT NULL;
+
+/* 16:54:58 SharpeDB */ ALTER TABLE `ratios` ADD `date` DATE  NOT NULL  AFTER `ratio`;
+
+/* 17:01:55 SharpeDB */ ALTER TABLE `ratios` DROP INDEX `unique_stock_report`;
+
+/* 17:02:52 SharpeDB */ ALTER TABLE `ratios` ADD UNIQUE INDEX `unique_ratio_per_day` (`stock_id`, `recipe_id`, `date`);
 

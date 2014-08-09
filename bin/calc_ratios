@@ -12,6 +12,7 @@ import MySQLdb
 from sharpefolio import stocks
 from sharpefolio import reports
 from sharpefolio import calc
+import datetime
 
 json_data = open('variables.json')
 variables = json.load(json_data)
@@ -44,20 +45,47 @@ ratio_mapper = reports.RatioMapper(ratio_repository)
 
 recipes_collection = recipe_mapper.find_all()
 
+stocks_collection = stock_mapper.find_all()
+
+two_yrs_ago = datetime.datetime.now().date() - datetime.timedelta(days=5*52*2)
+
 for recipe in recipes_collection.loop():
 
-	stocks_collection = stock_mapper.find_all()
-	for stock in stocks_collection.loop():
-		prices_collection = price_mapper.find_by_stock_id_in_range(stock.id, start_date, end_date)
-		prices = [price.closing_price for price in prices_collection.loop()]
+    today = datetime.datetime.now().date()
+    while today is not two_yrs_ago:
 
-		ratio = calc.Ratio(prices)
-		if (recipe.report_formula == 'sharpe'):
-			value = ratio.sharpe()
-		else:
-			value = ratio.sortino()
+        today -= datetime.timedelta(days=1)
 
-		# print 'calculating %s ratio %d for %s (%s - %d days): %f' % (report.formula, report.id, stock.symbol, report.date, report.duration, value)
+        for stock in stocks_collection.loop():
+            prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, today, limit=recipe.report_duration)
+            prices = [price.closing_price for price in prices_collection.loop()]
 
-		ratio_entry = reports.Ratio(stock.id, report.id, value)
-		ratio_mapper.insert(ratio_entry)
+            ratio = calc.Ratio(prices)
+            if (recipe.report_formula == 'sharpe'):
+                value = ratio.sharpe()
+            else:
+                value = ratio.sortino()
+
+            # print 'calculating %s ratio %d for %s (%s - %d days): %f' % (report.formula, report.id, stock.symbol, report.date, report.duration, value)
+
+            ratio_entry = reports.Ratio(stock.id, recipe.id, value, today.strftime('%Y-%m-%d'))
+
+            try:
+                ratio_mapper.insert(ratio_entry)
+            except Exception, e:
+                print 'error inserting recipe: %d for stock: %d for day %s (%s)' % (recipe.id, stock.id, today, e)
+                pass
+
+            # Only do 1 stock for now.
+            break
+
+    # Only do 1 recipe for now.
+    break
+
+    
+    # stocks_collection = stock_mapper.find_all()
+    # for stock in stocks_collection.loop():
+    # 	prices_collection = price_mapper.find_by_stock_id_in_range(stock.id, start_date, end_date)
+    # 	prices = [price.closing_price for price in prices_collection.loop()]
+
+

@@ -76,36 +76,37 @@ class ReportMysqlRepository(dm.MysqlRepository):
 		return data
 
 class Ratio(object):
-	def __init__(self, stock_id, report_id, ratio, id = None):
+	def __init__(self, stock_id, recipe_id, ratio, date, id = None):
 		self.id = id
 		self.stock_id = stock_id
-		self.report_id = report_id
+		self.recipe_id = recipe_id
 		self.ratio = ratio
+		self.date = date
 
 	def __str__(self):
-		return "stock_id: %d report_id: %d ratio: %d" % (self.stock_id, self.report_id, self.ratio)
+		return "stock_id: %d recipe_id: %d ratio: %d" % (self.stock_id, self.recipe_id, self.ratio)
 
 class RatioMapper(dm.Mapper):
 	def insert(self, model):
 		self._repository.insert(model)
 
-	def find_highest_ratio(self, report_id, limit):
-		return self._repository.find_highest_ratio(report_id, limit)
+	def find_highest_ratio(self, recipe_id, limit):
+		return self._repository.find_highest_ratio(recipe_id, limit)
 
 class RatioMysqlRepository(dm.MysqlRepository):
 	def insert(self, model):
 		cursor = self._database.cursor()
 		cursor.execute('\
 			INSERT INTO `ratios`\
-			(`stock_id`, `report_id`, `ratio`)\
-			VALUES(%s, %s, %s)',
-			(model.stock_id, model.report_id, model.ratio)
+			(`stock_id`, `recipe_id`, `ratio`, `date`)\
+			VALUES(%s, %s, %s, %s)',
+			(model.stock_id, model.recipe_id, model.ratio, model.date)
 		)
 		self._database.commit()
 
-	def find_highest_ratio(self, report_id, limit):
+	def find_highest_ratio(self, recipe_id, limit):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
-		cursor.execute('SELECT * FROM `ratios` WHERE report_id = %s ORDER BY ratio DESC LIMIT %s', (report_id, limit))
+		cursor.execute('SELECT * FROM `ratios` WHERE recipe_id = %s ORDER BY ratio DESC LIMIT %s', (recipe_id, limit))
 		return dm.Collection(Ratio, cursor)
 
 class Recipe(object):
@@ -147,8 +148,7 @@ class RecipeMysqlRepository(dm.MysqlRepository):
 	def find_all(self):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
 		cursor.execute('SELECT * FROM `recipes`')
-		return dm.Collection(Report, cursor, self._datamap)
-
+		return dm.Collection(Recipe, cursor)
 
 	def truncate(self):
 		cursor = self._database.cursor()
