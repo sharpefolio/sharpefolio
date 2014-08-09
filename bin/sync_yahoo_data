@@ -41,10 +41,10 @@ yahoo_sync_log_mapper = yahoo_sync_logs.YahooSyncLogMapper(yahoo_sync_log_reposi
 
 parser = argparse.ArgumentParser(description='Sync with the prices from the yahoo finance API.')
 
-yesterday = datetime.datetime.now().date() - datetime.timedelta(days=1)
+today = datetime.datetime.now().date()
 
 parser.add_argument('startDate', type=parseDateArg)
-parser.add_argument('--endDate', type=parseDateArg, default=yesterday)
+parser.add_argument('--endDate', type=parseDateArg, default=today)
 
 args = parser.parse_args()
 
