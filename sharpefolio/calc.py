@@ -12,13 +12,16 @@ class Ratio(object):
 		self.benchmark = self._prepare_benchmark(benchmark)
 		self.ret = np.diff(self.prices)
 		self.b_ret = np.diff(self.benchmark)
+		self.adj_ret = None
+		self.std = None
+		self.avg = None
 
 	def sharpe(self):
 
-		adj_ret = [a - b for a, b in zip(self.ret, self.b_ret)]
-		std = np.std(self.ret)
+		self.adj_ret = np.array([a - b for a, b in zip(self.ret, self.b_ret)])
+		self.std = np.std(self.adj_ret, dtype=np.float64, ddof=1)
 
-		return self._get_info_ratio(adj_ret, std)
+		return self._get_info_ratio()
 
 	def sortino(self):
 		'''
@@ -39,11 +42,11 @@ class Ratio(object):
 
 		return sortino
 
-	def _get_info_ratio(self, ret, std):
+	def _get_info_ratio(self):
 
-		avg = np.mean(ret)
+		self.avg = np.mean(self.adj_ret)
 
-		return avg * np.sqrt(self.n) / (1 + std)
+		return self.avg / (1 + self.std)
 
 	def _prepare_benchmark(self, benchmark):
 

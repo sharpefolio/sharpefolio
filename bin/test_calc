@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+
+import numpy as np
+import unittest
+from sharpefolio import calc
+
+class TestSequenceFunctions(unittest.TestCase):
+
+    def setUp(self):
+        self.prices = [100., 130., 45., 135., 400., 85., 150.]
+        self.empty_benchmark = [1000., 1000., 1000., 1000., 1000., 1000., 1000.]
+        self.benchmark = [1000., 1010., 995., 1005., 998., 1007., 1014.]
+
+    def test_sharpe_no_benchmark(self):
+        ratio = calc.Ratio(self.prices)
+
+        # Expected returns
+        e_ret = np.array([30, -85, 90, 265, -315, 65])
+        # Expected sharpe ratio
+        e_sharpe_ratio = 0.0426
+        # Expected standard deviation
+        e_std = 194.6707
+        # Expected average
+        e_avg = 8.3333
+
+        # Calculate Sharpe Ratio
+        sharpe_ratio = ratio.sharpe()
+
+        # Test if returns are diffed correctly.
+        self.assertEqual(ratio.ret.all(), e_ret.all())
+
+        # Test if excess returns are calculated correctly.
+        self.assertEqual(ratio.adj_ret.all(), e_ret.all())
+
+        # Test if average equals expected average
+        self.assertEqual(round(ratio.avg, 4), e_avg)
+
+        # Test if standard deviation equals expected stdev
+        self.assertEqual(round(ratio.std, 4), e_std)
+
+        self.assertEqual(round(sharpe_ratio, 4), e_sharpe_ratio)
+
+    def test_sharpe_with_benchmark(self):
+        ratio = calc.Ratio(self.prices, self.benchmark)
+
+        # Expected returns
+        e_ret = np.array([20, -70, 80, 272, -324, 58])
+        # Expected sharpe ratio
+        e_sharpe_ratio = 0.0303
+        # Expected standard deviation
+        e_std = 196.8797
+        # Expected average
+        e_avg = 6.
+
+        # Calculate Sharpe Ratio
+        sharpe_ratio = ratio.sharpe()
+
+        # Test if returns are diffed correctly.
+        self.assertEqual(ratio.ret.all(), e_ret.all())
+
+        # Test if excess returns are calculated correctly.
+        self.assertEqual(ratio.adj_ret.all(), e_ret.all())
+
+        # Test if average equals expected average
+        self.assertEqual(round(ratio.avg, 4), e_avg)
+
+        # Test if standard deviation equals expected stdev
+        self.assertEqual(round(ratio.std, 4), e_std)
+
+        self.assertEqual(round(sharpe_ratio, 4), e_sharpe_ratio)
+
+if __name__ == '__main__':
+    unittest.main()
