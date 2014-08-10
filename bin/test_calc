@@ -72,6 +72,36 @@ class TestSequenceFunctions(unittest.TestCase):
         # Test if Sharpe ratio equals expected Sharpe ratio
         self.assertEqual(round(sharpe_ratio, 4), e_sharpe_ratio)
 
+    def test_sharpe_zero_risk(self):
+        ratio = calc.Ratio([0, 0, 0, 0, 0, 0, 0])
+
+        # Expected returns
+        e_ret = np.array([0, 0, 0, 0, 0, 0, 0])
+        # Expected standard deviation
+        e_std = 0
+        # Expected average
+        e_avg = 0
+        # Expected sharpe ratio
+        e_sharpe_ratio = 0
+
+        # Calculate Sharpe Ratio
+        sharpe_ratio = ratio.sharpe()
+
+        # Test if returns are diffed correctly.
+        self.assertEqual(ratio.ret.all(), e_ret.all())
+
+        # Test if excess returns are calculated correctly.
+        self.assertEqual(ratio.adj_ret.all(), e_ret.all())
+
+        # Test if average equals expected average
+        self.assertEqual(round(ratio.avg, 4), e_avg)
+
+        # Test if standard deviation equals expected stdev
+        self.assertEqual(round(ratio.std, 4), e_std)
+
+        # Test if Sharpe ratio equals expected Sharpe ratio
+        self.assertEqual(round(sharpe_ratio, 4), e_sharpe_ratio)
+
     def test_sortino_no_benchmark(self):
         ratio = calc.Ratio(self.prices)
 
@@ -152,6 +182,8 @@ class TestSequenceFunctions(unittest.TestCase):
         # Test if Sortino ratio equals expected Sortion ratio
         self.assertEqual(round(sortino_ratio, 4), e_sortino_ratio)
 
+    def test_invalid_benchmark_size_throws_exception(self):
+        self.assertRaises(Exception, calc.Ratio, self.prices, [1, 2, 3])
 
 
 if __name__ == '__main__':
