@@ -35,10 +35,7 @@ class Ratio(object):
 		# And calculate downside risk as second order lower partial moment.
 		down_risk = np.sqrt(neg_ret_sum / self.n)
 
-		if down_risk > 0.0001:
-			sortino = avg_ret / down_risk
-		else:
-			sortino = 0
+		sortino = avg_ret / (1 + down_risk)
 
 		return sortino
 
@@ -46,10 +43,7 @@ class Ratio(object):
 
 		avg = np.mean(ret)
 
-		if std > 0.0001:
-			return avg * np.sqrt(self.n) / std
-		else:
-			return 0
+		return avg * np.sqrt(self.n) / (1 + std)
 
 	def _prepare_benchmark(self, benchmark):
 
