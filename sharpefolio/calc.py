@@ -11,10 +11,14 @@ class Ratio(object):
 		self.n = len(self.prices)
 		self.benchmark = self._prepare_benchmark(benchmark)
 		self.ret = np.diff(self.prices)
+		self.n_ret = len(self.ret)
 		self.b_ret = np.diff(self.benchmark)
 		self.adj_ret = None
 		self.std = None
 		self.avg = None
+		self.neg_ret = None
+		self.neg_ret_sum = None
+		self.down_risk = None
 
 	def sharpe(self):
 
@@ -28,17 +32,17 @@ class Ratio(object):
 		sortino is an adjusted ratio which only takes the 
 		standard deviation of negative returns into account
 		'''
-		adj_ret = [a - b for a, b in zip(self.ret, self.b_ret)]
-		avg_ret = np.mean(adj_ret)
+		self.adj_ret = np.array([a - b for a, b in zip(self.ret, self.b_ret)])
+		self.avg = np.mean(self.adj_ret)
 
 		# Take all negative returns.
-		neg_ret = [a ** 2 for a in adj_ret if a < 0]
+		self.neg_ret = np.array([a ** 2 for a in self.adj_ret if a < 0])
 		# Sum it.
-		neg_ret_sum = np.sum(neg_ret)
+		self.neg_ret_sum = np.sum(self.neg_ret)
 		# And calculate downside risk as second order lower partial moment.
-		down_risk = np.sqrt(neg_ret_sum / self.n)
+		self.down_risk = np.sqrt(self.neg_ret_sum / self.n_ret)
 
-		sortino = avg_ret / (1 + down_risk)
+		sortino = self.avg / (1 + self.down_risk)
 
 		return sortino
 

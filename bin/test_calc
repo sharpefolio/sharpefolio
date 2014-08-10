@@ -7,6 +7,7 @@ from sharpefolio import calc
 class TestSequenceFunctions(unittest.TestCase):
 
     def setUp(self):
+        # https://docs.google.com/spreadsheets/d/1khXkmGhHytQ0heDK2t9pkiZcAurzlV8maGFhy4UDPFY
         self.prices = [100., 130., 45., 135., 400., 85., 150.]
         self.empty_benchmark = [1000., 1000., 1000., 1000., 1000., 1000., 1000.]
         self.benchmark = [1000., 1010., 995., 1005., 998., 1007., 1014.]
@@ -15,13 +16,13 @@ class TestSequenceFunctions(unittest.TestCase):
         ratio = calc.Ratio(self.prices)
 
         # Expected returns
-        e_ret = np.array([30, -85, 90, 265, -315, 65])
-        # Expected sharpe ratio
-        e_sharpe_ratio = 0.0426
+        e_ret = np.array([30., -85., 90., 265., -315., 65.])
         # Expected standard deviation
         e_std = 194.6707
         # Expected average
         e_avg = 8.3333
+        # Expected sharpe ratio
+        e_sharpe_ratio = 0.0426
 
         # Calculate Sharpe Ratio
         sharpe_ratio = ratio.sharpe()
@@ -38,19 +39,20 @@ class TestSequenceFunctions(unittest.TestCase):
         # Test if standard deviation equals expected stdev
         self.assertEqual(round(ratio.std, 4), e_std)
 
+        # Test if Sharpe ratio equals expected Sharpe ratio
         self.assertEqual(round(sharpe_ratio, 4), e_sharpe_ratio)
 
     def test_sharpe_with_benchmark(self):
         ratio = calc.Ratio(self.prices, self.benchmark)
 
         # Expected returns
-        e_ret = np.array([20, -70, 80, 272, -324, 58])
-        # Expected sharpe ratio
-        e_sharpe_ratio = 0.0303
+        e_ret = np.array([20., -70., 80., 272., -324., 58.])
         # Expected standard deviation
         e_std = 196.8797
         # Expected average
         e_avg = 6.
+        # Expected sharpe ratio
+        e_sharpe_ratio = 0.0303
 
         # Calculate Sharpe Ratio
         sharpe_ratio = ratio.sharpe()
@@ -67,7 +69,90 @@ class TestSequenceFunctions(unittest.TestCase):
         # Test if standard deviation equals expected stdev
         self.assertEqual(round(ratio.std, 4), e_std)
 
+        # Test if Sharpe ratio equals expected Sharpe ratio
         self.assertEqual(round(sharpe_ratio, 4), e_sharpe_ratio)
+
+    def test_sortino_no_benchmark(self):
+        ratio = calc.Ratio(self.prices)
+
+        # Expected returns
+        e_ret = np.array([30, -85, 90, 265, -315, 65])
+        # Expected average
+        e_avg = 8.3333
+        # Expected neg returns
+        e_neg_ret = np.array([7225., 99225.])
+        # Expected sum of neg returns
+        e_neg_ret_sum = 106450.
+        # Expected down risk
+        e_down_risk = 133.1978
+        # Expected sharpe ratio
+        e_sortino_ratio = 0.0621
+
+        # Calculate Sortino Ratio
+        sortino_ratio = ratio.sortino()
+
+        # Test if returns are diffed correctly.
+        self.assertEqual(ratio.ret.all(), e_ret.all())
+
+        # Test if excess returns are calculated correctly.
+        self.assertEqual(ratio.adj_ret.all(), e_ret.all())
+
+        # Test if average equals expected average
+        self.assertEqual(round(ratio.avg, 4), e_avg)
+
+        # Test if neg returns equals expected neg returns
+        self.assertEqual(ratio.neg_ret.all(), e_neg_ret.all())
+
+        # Test if neg return sum equals expected neg returns sum
+        self.assertEqual(ratio.neg_ret_sum, e_neg_ret_sum)
+
+        # Test if downside risk equals expected downside risk
+        self.assertEqual(round(ratio.down_risk, 4), e_down_risk)
+
+        # Test if Sortino ratio equals expected Sortion ratio
+        self.assertEqual(round(sortino_ratio, 4), e_sortino_ratio)
+
+    def test_sortino_with_benchmark(self):
+        ratio = calc.Ratio(self.prices, self.benchmark)
+
+        # Expected returns
+        e_ret = np.array([20., -70., 80., 272., -324., 58.])
+        # Expected average
+        e_avg = 6.
+        # Expected neg returns
+        e_neg_ret = np.array([4900., 104976.])
+        # Expected sum of neg returns
+        e_neg_ret_sum = 109876.
+        # Expected down risk
+        e_down_risk = 135.3243
+        # Expected sharpe ratio
+        e_sortino_ratio = 0.0440
+
+        # Calculate Sortino Ratio
+        sortino_ratio = ratio.sortino()
+
+        # Test if returns are diffed correctly.
+        self.assertEqual(ratio.ret.all(), e_ret.all())
+
+        # Test if excess returns are calculated correctly.
+        self.assertEqual(ratio.adj_ret.all(), e_ret.all())
+
+        # Test if average equals expected average
+        self.assertEqual(round(ratio.avg, 4), e_avg)
+
+        # Test if neg returns equals expected neg returns
+        self.assertEqual(ratio.neg_ret.all(), e_neg_ret.all())
+
+        # Test if neg return sum equals expected neg returns sum
+        self.assertEqual(ratio.neg_ret_sum, e_neg_ret_sum)
+
+        # Test if downside risk equals expected downside risk
+        self.assertEqual(round(ratio.down_risk, 4), e_down_risk)
+
+        # Test if Sortino ratio equals expected Sortion ratio
+        self.assertEqual(round(sortino_ratio, 4), e_sortino_ratio)
+
+
 
 if __name__ == '__main__':
     unittest.main()
