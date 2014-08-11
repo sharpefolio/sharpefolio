@@ -73,6 +73,10 @@ for recipe in recipes_collection.loop():
 
     while endDate >= startDate:
 
+        if endDate.weekday() >= 5:
+            endDate -= datetime.timedelta(days=1)
+            continue
+
         for stock in stocks_collection.loop():
             prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, endDate, limit=recipe.report_duration)
             prices = [price.closing_price for price in prices_collection]
