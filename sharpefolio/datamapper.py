@@ -13,6 +13,12 @@ class Collection:
 			self.i += 1
 			yield self.build_model(model)
 
+	def count(self):
+		cnt = 0
+		for model in self._models:
+			cnt += 1
+		return cnt
+
 	def next(self):
 		return self.build_model(self._models.fetchone())
 

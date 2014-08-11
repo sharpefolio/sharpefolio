@@ -71,8 +71,10 @@ class Picker:
         self.picks = None
 
     def _picks_with_least_correlation(self):
-
-        top_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.recipe.n_stocks)
+        picks = {}
+        top_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.end_date, self.recipe.n_stocks)
+        if top_ratios.count() == 0:
+            return {}
 
         stock_prices = {}
         for ratio in top_ratios:
@@ -82,7 +84,6 @@ class Picker:
 
         picked_stock_ids = picker.pick(self.recipe.n_stocks)
 
-        picks = {}
         for picked_stock_id in picked_stock_ids:
             for ratio in top_ratios:
                 if ratio.stock_id == picked_stock_id:
@@ -94,7 +95,9 @@ class Picker:
     def _picks_with_highest_ratio(self):
         picks = {}
 
-        highest_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.recipe.n_stocks)
+        highest_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.end_date, self.recipe.n_stocks)
+        if highest_ratios.count() == 0:
+            return picks
 
         for ratio in highest_ratios:
             symbol = stock_mapper.find_by_id(ratio.stock_id).symbol
@@ -129,7 +132,8 @@ class Picker:
         else:
             self.picks = self._picks_with_highest_ratio()
 
-        print "picks:", self.picks
+        if not self.picks:
+             raise Exception("picks are empty")
 
         # Distribute stock_prices
         if recipe.distribution == 'ratio':
@@ -143,16 +147,13 @@ class Picker:
 
             weight = dist[symbol]
 
-            print "recipe_id:", self.recipe.id, "stock_id:", stock.id, "weight:", weight
-            
             prices = price_mapper.find_by_stock_id_until_day(stock.id, until_date=self.end_date, limit=2)
-
             gain = 0
-            today = prices.next()
-            yesterday = prices.next()
-            print "today:", today.closing_price, "yesterday:", yesterday.closing_price
-            if today > 0 and yesterday > 0:
-                gain = today.closing_price / yesterday.closing_price
+            if prices.count() == 2:
+                today = prices.next()
+                yesterday = prices.next()
+                if today.closing_price > 0 and yesterday.closing_price > 0:
+                    gain = today.closing_price / yesterday.closing_price
 
             pick = reports.Pick(self.recipe.id, stock.id, weight, gain, self.end_date.strftime('%Y-%m-%d'))
             pick_mapper.insert(pick)
@@ -161,14 +162,12 @@ last_date = price_mapper.find_last_date()
 
 for recipe in recipes_collection:
 
-    print "picking stocks for recipe", "formula:", recipe.report_formula, "duration:", recipe.report_duration, "n_stocks:", recipe.n_stocks, "correlation:", recipe.check_correlation, "distribution:", recipe.distribution, "check_benchmark_id:", recipe.check_benchmark_id
+    print "picking stocks for recipe", recipe.id, "formula:", recipe.report_formula, "duration:", recipe.report_duration, "n_stocks:", recipe.n_stocks, "correlation:", recipe.check_correlation, "distribution:", recipe.distribution, "check_benchmark_id:", recipe.check_benchmark_id
 
     startDate = args.startDate
     endDate = args.endDate
 
     while endDate != startDate:
-
-        print "pick stocks for:", endDate
 
         # picker = Picker(recipe, startDate, endDate)
         # picker.create_picks()

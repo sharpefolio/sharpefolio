@@ -90,8 +90,8 @@ class RatioMapper(dm.Mapper):
 	def insert(self, model):
 		self._repository.insert(model)
 
-	def find_highest_ratio(self, recipe_id, limit):
-		return self._repository.find_highest_ratio(recipe_id, limit)
+	def find_highest_ratio(self, recipe_id, end_date, limit):
+		return self._repository.find_highest_ratio(recipe_id, end_date, limit)
 
 class RatioMysqlRepository(dm.MysqlRepository):
 	def insert(self, model):
@@ -104,9 +104,9 @@ class RatioMysqlRepository(dm.MysqlRepository):
 		)
 		self._database.commit()
 
-	def find_highest_ratio(self, recipe_id, limit):
+	def find_highest_ratio(self, recipe_id, end_date, limit):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
-		cursor.execute('SELECT * FROM `ratios` WHERE recipe_id = %s ORDER BY ratio DESC LIMIT %s', (recipe_id, limit))
+		cursor.execute('SELECT * FROM `ratios` WHERE recipe_id = %s AND `date` <= %s ORDER BY ratio DESC LIMIT %s', (recipe_id, end_date.isoformat(), limit))
 		return dm.Collection(Ratio, cursor)
 
 class Recipe(object):
