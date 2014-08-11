@@ -152,7 +152,7 @@ class Picker:
             yesterday = prices.next()
             print "today:", today.closing_price, "yesterday:", yesterday.closing_price
             if today > 0 and yesterday > 0:
-                gain = today.closing_price / yesterday.closing_price
+                gain = today.closing_price - yesterday.closing_price
 
             pick = reports.Pick(self.recipe.id, stock.id, weight, gain, self.end_date.strftime('%Y-%m-%d'))
             pick_mapper.insert(pick)
