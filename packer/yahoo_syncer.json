@@ -1,0 +1,59 @@
+{
+  "variables": {
+    "mysql_host": "",
+    "mysql_user": "",
+    "mysql_password": "",
+    "mysql_database": "",
+
+    "aws_access_key": "",
+    "aws_secret_key": "",
+    "username": "",
+    "account_id": "",
+    "s3_bucket": "sharpefolio-packer",
+    "x509_cert_path": "",
+    "x509_key_path": "",
+    "x509_upload_path": "/tmp",
+    "ssh_private_key_file": "",
+    "temporary_key_pair_name": "",
+    "ami_name": "yahoo-syncer-{{isotime}}"
+  },
+  "builders": [{
+    "type": "amazon-instance",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "source_ami": "ami-eb81f9db",
+    "subnet_id": "subnet-4aea1d21",
+    "account_id": "{{user `account_id`}}",
+    "s3_bucket": "{{user `s3_bucket`}}/{{user `ami_name` | clean_ami_name}}",
+    "x509_cert_path": "{{user `x509_cert_path`}}",
+    "x509_key_path": "{{user `x509_key_path`}}",
+    "x509_upload_path": "{{user `x509_upload_path`}}",
+    "region": "us-west-2",
+    "security_group_ids": ["sg-df5addba"],
+    "instance_type": "m1.large",
+    "ssh_username": "ubuntu",
+    "ami_name": "{{user `ami_name` | clean_ami_name}}",
+    "bundle_vol_command": "sudo -n ec2-bundle-vol --include `sudo -n find / -name '*.gpg' -o -name '*.pem' | grep -v '^/mnt\\|^/home\\|^/tmp' | tr '\\n' ','` -k {{.KeyPath}} -u {{.AccountId}} -c {{.CertPath}} -r {{.Architecture}} -e {{.PrivatePath}}/* -d {{.Destination}} -p {{.Prefix}} --batch",
+    "tags": {
+      "created_on": "{{timestamp}}",
+      "created_on_iso": "{{isotime}}",
+      "created_by": "packer",
+      "triggered_by": "{{user `username`}}"
+    }
+  }],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": ".",
+      "destination": "/home/ubuntu/sharpefolio"
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "cd /home/ubuntu/sharpefolio",
+        "chmod -R +x bin/*",
+        "bin/packer/yahoo_syncer"
+      ]
+    }
+  ]
+}

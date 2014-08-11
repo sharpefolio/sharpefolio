@@ -8,11 +8,12 @@ sys.path.append(os.path.abspath('.'))
 
 import json
 import MySQLdb
-# from datetime import datetime
-from sharpefolio import stocks
-from sharpefolio import reports
-from sharpefolio import calc
 import datetime
+import argparse
+from sharpefolio import stocks, reports, calc, benchmarks
+
+def parseDateArg(string):
+    return datetime.datetime.strptime("%s" % string, "%Y-%m-%d").date()
 
 json_data = open('variables.json')
 variables = json.load(json_data)
@@ -23,6 +24,18 @@ connection = MySQLdb.connect(
     passwd = variables['mysql_password'],
     db     = variables['mysql_database']
 )
+
+parser = argparse.ArgumentParser(description='Calculate ratios.')
+
+today = datetime.datetime.now().date()
+
+parser.add_argument('startDate', type = parseDateArg, help = 'The day to start calculating ratios for (further in the past)')
+parser.add_argument('--endDate', type = parseDateArg, default = today, help = 'The day to calculate the ratios up to (defaults to today)')
+
+args = parser.parse_args()
+
+startDate = args.startDate
+endDate = args.endDate
 
 report_repository = reports.ReportMysqlRepository(connection)
 report_mapper = reports.ReportMapper(report_repository)
@@ -43,32 +56,51 @@ recipe_mapper = reports.RecipeMapper(recipe_repository)
 ratio_repository = reports.RatioMysqlRepository(connection)
 ratio_mapper = reports.RatioMapper(ratio_repository)
 
+# Set up benchmark mapper
+benchmark_repository = benchmarks.PriceMysqlRepository(connection)
+benchmark_mapper = benchmarks.PriceMapper(benchmark_repository)
+
 recipes_collection = recipe_mapper.find_all()
 stocks_collection = stock_mapper.find_all()
 
-two_yrs_ago = datetime.datetime.now().date() - datetime.timedelta(days=5*52*2)
-print "until:", two_yrs_ago
+print "until:", startDate
 
 for recipe in recipes_collection.loop():
 
-    today = datetime.datetime.now().date()
+    # Reset the date for every recipe
+    endDate = args.endDate
 
-    while today != two_yrs_ago:
+    while endDate >= startDate:
+
+        if endDate.weekday() >= 5:
+            endDate -= datetime.timedelta(days=1)
+            continue
 
         for stock in stocks_collection.loop():
-            prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, today, limit=recipe.report_duration)
-            prices = [price.closing_price for price in prices_collection.loop()]
+            prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, endDate, limit=recipe.report_duration)
+            prices = [price.closing_price for price in prices_collection]
+            price_dates = [price.date for price in prices_collection]
 
             first_price = None
-            for price in prices_collection.loop():
+            for price in prices_collection:
                 first_price = price
                 break
 
             if first_price == None:
-                print 'no prices found for recipe: %d for stock: %d for day %s' % (recipe.id, stock.id, today)
+                print 'no prices found for recipe: %d for stock: %d for day %s' % (recipe.id, stock.id, endDate)
                 continue
 
-            ratio = calc.Ratio(prices)
+            benchmark_prices = None
+            if recipe.check_benchmark_id > 0:
+                benchmark_collection = benchmark_mapper.find_by_benchmark_id_until_day(recipe.check_benchmark_id, endDate, limit=recipe.report_duration)
+                benchmark_prices = [price.closing_price for price in benchmark_collection]
+                benchmark_dates = [price.date for price in benchmark_collection]
+
+                if price_dates != benchmark_dates:
+                    print "no suitable benchmarks found"
+                    benchmark_prices = None
+
+            ratio = calc.Ratio(prices, benchmark_prices)
             if (recipe.report_formula == 'sharpe'):
                 value = ratio.sharpe()
             else:
@@ -83,18 +115,18 @@ for recipe in recipes_collection.loop():
                 print 'error inserting recipe: %d for stock: %d for day: %s (%s)' % (recipe.id, stock.id, first_price.date, e)
                 pass
 
-            today -= datetime.timedelta(days=1)
+        endDate -= datetime.timedelta(days=1)
 
             # Only do 1 stock for now.
-            break
+            # break
 
     # Only do 1 recipe for now.
-    break
+    # break
 
-    
+
     # stocks_collection = stock_mapper.find_all()
-    # for stock in stocks_collection.loop():
+    # for stock in stocks_collection:
     # 	prices_collection = price_mapper.find_by_stock_id_in_range(stock.id, start_date, end_date)
-    # 	prices = [price.closing_price for price in prices_collection.loop()]
+    # 	prices = [price.closing_price for price in prices_collection]
 
 

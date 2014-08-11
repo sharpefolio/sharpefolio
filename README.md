@@ -53,6 +53,10 @@ Create `variables.json` file at the root of the repo (it's git-ignored) and add 
 
 ~~~~
 
+## Run Packer
+
+ - `packer build -var-file variables.json packer/yahoo_syncer.json`
+
 ## DISCLAIMER
 
 Copyright (c) 2013-2014, [Melvin Tercan](https://github.com/melvinmt), [Lorenzo Pisani](https://github.com/Zeelot)

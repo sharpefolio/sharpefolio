@@ -11,45 +11,46 @@ class Ratio(object):
 		self.n = len(self.prices)
 		self.benchmark = self._prepare_benchmark(benchmark)
 		self.ret = np.diff(self.prices)
+		self.n_ret = len(self.ret)
 		self.b_ret = np.diff(self.benchmark)
+		self.adj_ret = None
+		self.std = None
+		self.avg = None
+		self.neg_ret = None
+		self.neg_ret_sum = None
+		self.down_risk = None
 
 	def sharpe(self):
 
-		adj_ret = [a - b for a, b in zip(self.ret, self.b_ret)]
-		std = np.std(self.ret)
+		self.adj_ret = np.array([a - b for a, b in zip(self.ret, self.b_ret)])
+		self.std = np.std(self.adj_ret, dtype=np.float64, ddof=1)
 
-		return self._get_info_ratio(adj_ret, std)
+		return self._get_info_ratio()
 
 	def sortino(self):
 		'''
 		sortino is an adjusted ratio which only takes the 
 		standard deviation of negative returns into account
 		'''
-		adj_ret = [a - b for a, b in zip(self.ret, self.b_ret)]
-		avg_ret = np.mean(adj_ret)
+		self.adj_ret = np.array([a - b for a, b in zip(self.ret, self.b_ret)])
+		self.avg = np.mean(self.adj_ret)
 
 		# Take all negative returns.
-		neg_ret = [a ** 2 for a in adj_ret if a < 0]
+		self.neg_ret = np.array([a ** 2 for a in self.adj_ret if a < 0])
 		# Sum it.
-		neg_ret_sum = np.sum(neg_ret)
+		self.neg_ret_sum = np.sum(self.neg_ret)
 		# And calculate downside risk as second order lower partial moment.
-		down_risk = np.sqrt(neg_ret_sum / self.n)
+		self.down_risk = np.sqrt(self.neg_ret_sum / self.n_ret)
 
-		if down_risk > 0.0001:
-			sortino = avg_ret / down_risk
-		else:
-			sortino = 0
+		sortino = self.avg / (1 + self.down_risk)
 
 		return sortino
 
-	def _get_info_ratio(self, ret, std):
+	def _get_info_ratio(self):
 
-		avg = np.mean(ret)
+		self.avg = np.mean(self.adj_ret)
 
-		if std > 0.0001:
-			return avg * np.sqrt(self.n) / std
-		else:
-			return 0
+		return self.avg / (1 + self.std)
 
 	def _prepare_benchmark(self, benchmark):
 
@@ -89,18 +90,19 @@ class InvertedCorrelationPicker(object):
 				max_date_symbol = symbol
 
 		self.stocks = {}
-		for i, date in enumerate(self.dates[max_date_symbol]):
-			for symbol in stocks.keys():
-				if self.stocks.has_key(symbol) is False:
-					self.stocks[symbol] = []
+		if max_date_symbol != "":
+			for i, date in enumerate(self.dates[max_date_symbol]):
+				for symbol in stocks.keys():
+					if self.stocks.has_key(symbol) is False:
+						self.stocks[symbol] = []
 
-				insert_price = None
-				for price in stocks[symbol]:
-					if price.date == date:
-						insert_price = price.closing_price
-						break
+					insert_price = None
+					for price in stocks[symbol]:
+						if price.date == date:
+							insert_price = price.closing_price
+							break
 
-				self.stocks[symbol].append(insert_price)
+					self.stocks[symbol].append(insert_price)
 
 		# backward fill
 		for symbol in self.stocks.keys():
@@ -158,8 +160,13 @@ class InvertedCorrelationPicker(object):
 		# Create all possible combinations of the n top equites for the given portfolio size.
 		portfolios = list(combinations(range(0, stocks_len), portfolio_size))
 
+		if len(portfolios) == 0:
+			return ids
+
 		# Add up all the correlations for each possible combination
 		total_corr = [sum([cormat[x[0]][x[1]] for x in combinations(p, 2)]) for p in portfolios]
+
+		print "ids:", ids, "portfolios:", portfolios
 
 		# Find the portfolio with the smallest sum of correlations
 		picks = [ids[i] for i in portfolios[total_corr.index(np.nanmin(total_corr))]]

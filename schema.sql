@@ -99,3 +99,14 @@ CREATE TABLE `benchmark_prices` (
 
 /* 17:02:52 SharpeDB */ ALTER TABLE `ratios` ADD UNIQUE INDEX `unique_ratio_per_day` (`stock_id`, `recipe_id`, `date`);
 
+/* 11:08:38 PM Sharpefolio DB */ ALTER TABLE `picks` DROP `report_id`;
+
+/* 11:42:10 PM Sharpefolio DB */ ALTER TABLE `picks` ADD `date` DATE  NOT NULL  AFTER `weight`;
+
+/* 11:42:30 PM Sharpefolio DB */ ALTER TABLE `picks` DROP INDEX `unique_recipe_stock`;
+
+/* 11:43:29 PM Sharpefolio DB */ ALTER TABLE `picks` ADD UNIQUE INDEX `unique_picks` (`recipe_id`, `stock_id`, `date`);
+
+/* 11:43:47 PM Sharpefolio DB */ ALTER TABLE `picks` ADD INDEX (`date`);
+
+
