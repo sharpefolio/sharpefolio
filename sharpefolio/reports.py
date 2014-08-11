@@ -110,13 +110,14 @@ class RatioMysqlRepository(dm.MysqlRepository):
 		return dm.Collection(Ratio, cursor)
 
 class Recipe(object):
-	def __init__(self, report_formula, report_duration, n_stocks=4, check_correlation=False, distribution='even', id=None):
+	def __init__(self, report_formula, report_duration, n_stocks=4, check_correlation=False, distribution='even', check_benchmark_id = 0, id=None):
 		self.id = id
 		self.n_stocks = n_stocks
 		self.check_correlation = check_correlation
 		self.distribution = distribution
 		self.report_formula = report_formula
 		self.report_duration = report_duration
+		self.check_benchmark_id = check_benchmark_id
 
 class RecipeMapper(dm.Mapper):
 	def insert(self, model):
@@ -138,9 +139,9 @@ class RecipeMysqlRepository(dm.MysqlRepository):
 		# print q
 		cursor.execute('\
 			INSERT INTO `recipes`\
-			(`n_stocks`, `check_correlation`, `distribution`,`report_duration`, `report_formula`)\
-			VALUES(%s, %s, %s, %s, %s)',
-			(model.n_stocks, int(model.check_correlation), model.distribution, model.report_duration, model.report_formula)
+			(`n_stocks`, `check_correlation`, `distribution`,`report_duration`, `report_formula`, `check_benchmark_id`)\
+			VALUES(%s, %s, %s, %s, %s, %s)',
+			(model.n_stocks, int(model.check_correlation), model.distribution, model.report_duration, model.report_formula, model.check_benchmark_id)
 		)
 		self._database.commit()
 		model.id = cursor.lastrowid

@@ -33,8 +33,9 @@ def days(n, type="days"):
     return math.ceil(n)
 
 combos = {
-            'n_stocks': list(range(4, 30)),
+            'n_stocks': [4, 8, 16, 30],
             'check_correlation': [True, False],
+            'check_benchmark_id': [0, 1, 2],
             'distribution': ['even', 'ratio'],
             'report_duration': [days(1, "week"), days(2, "weeks"), days(3, "weeks"), days(1, "month"), days(3, "months"), days(6, "months"), days(1, "year"), days(2, "years")],
             'report_formula': ['sharpe', 'sortino']
@@ -45,10 +46,11 @@ recipe_mapper.truncate()
 
 for n_stocks in combos['n_stocks']:
         for check_correlation in combos['check_correlation']:
-            for distribution in combos['distribution']:
-                for report_duration in combos['report_duration']:
-                    for report_formula in combos['report_formula']:
-                        recipe = reports.Recipe(report_formula, report_duration, n_stocks, check_correlation, distribution)
-                        recipe_mapper.insert(recipe)
-                        print "inserted recipe for", "formula:", report_formula, "duration:", report_duration, "n_stocks:", n_stocks, "correlation:", check_correlation, "distribution:", distribution
+            for check_benchmark_id in combos['check_benchmark_id']:
+                for distribution in combos['distribution']:
+                    for report_duration in combos['report_duration']:
+                        for report_formula in combos['report_formula']:
+                            recipe = reports.Recipe(report_formula, report_duration, n_stocks, check_correlation, distribution, check_benchmark_id)
+                            recipe_mapper.insert(recipe)
+                            print "inserted recipe for", "formula:", report_formula, "duration:", report_duration, "n_stocks:", n_stocks, "correlation:", check_correlation, "distribution:", distribution, "check_benchmark_id:", check_benchmark_id
 

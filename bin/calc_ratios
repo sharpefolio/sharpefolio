@@ -8,10 +8,7 @@ sys.path.append(os.path.abspath('.'))
 
 import json
 import MySQLdb
-# from datetime import datetime
-from sharpefolio import stocks
-from sharpefolio import reports
-from sharpefolio import calc
+from sharpefolio import stocks, reports, calc, benchmarks
 import datetime
 
 json_data = open('variables.json')
@@ -43,6 +40,10 @@ recipe_mapper = reports.RecipeMapper(recipe_repository)
 ratio_repository = reports.RatioMysqlRepository(connection)
 ratio_mapper = reports.RatioMapper(ratio_repository)
 
+# Set up benchmark mapper
+benchmark_repository = benchmarks.PriceMysqlRepository(connection)
+benchmark_mapper = benchmarks.PriceMapper(benchmark_repository)
+
 recipes_collection = recipe_mapper.find_all()
 stocks_collection = stock_mapper.find_all()
 
@@ -58,6 +59,7 @@ for recipe in recipes_collection.loop():
         for stock in stocks_collection.loop():
             prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, today, limit=recipe.report_duration)
             prices = [price.closing_price for price in prices_collection.loop()]
+            price_dates = [price.date for price in prices_collection.loop()]
 
             first_price = None
             for price in prices_collection.loop():
@@ -68,7 +70,17 @@ for recipe in recipes_collection.loop():
                 print 'no prices found for recipe: %d for stock: %d for day %s' % (recipe.id, stock.id, today)
                 continue
 
-            ratio = calc.Ratio(prices)
+            benchmark_prices = None
+            if recipe.check_benchmark_id > 0:
+                benchmark_collection = benchmark_mapper.find_by_benchmark_id_until_day(recipe.check_benchmark_id, today, limit=recipe.report_duration)
+                benchmark_prices = [price.closing_price for price in benchmark_collection.loop()]
+                benchmark_dates = [price.date for price in benchmark_collection.loop()]
+
+                if price_dates != benchmark_dates:
+                    print "no suitable benchmarks found"
+                    benchmark_prices = None
+
+            ratio = calc.Ratio(prices, benchmark_prices)
             if (recipe.report_formula == 'sharpe'):
                 value = ratio.sharpe()
             else:
@@ -89,7 +101,7 @@ for recipe in recipes_collection.loop():
             break
 
     # Only do 1 recipe for now.
-    break
+    # break
 
     
     # stocks_collection = stock_mapper.find_all()
