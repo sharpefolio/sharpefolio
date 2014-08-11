@@ -8,8 +8,13 @@ sys.path.append(os.path.abspath('.'))
 
 import json
 import MySQLdb
-from sharpefolio import stocks, reports, calc, benchmarks
 import datetime
+import dateutil.relativedelta
+import argparse
+from sharpefolio import stocks, reports, calc, benchmarks
+
+def parseDateArg(string):
+    return datetime.datetime.strptime("%s" % string, "%Y-%m-%d").date()
 
 json_data = open('variables.json')
 variables = json.load(json_data)
@@ -20,6 +25,18 @@ connection = MySQLdb.connect(
     passwd = variables['mysql_password'],
     db     = variables['mysql_database']
 )
+
+parser = argparse.ArgumentParser(description='Calculate ratios.')
+
+today = datetime.datetime.now().date()
+
+parser.add_argument('startDate', type = parseDateArg, help = 'The day to start calculating ratios for (further in the past)')
+parser.add_argument('--endDate', type = parseDateArg, default = today, help = 'The day to calculate the ratios up to (defaults to today)')
+
+args = parser.parse_args()
+
+startDate = args.startDate
+endDate = args.endDate
 
 report_repository = reports.ReportMysqlRepository(connection)
 report_mapper = reports.ReportMapper(report_repository)
@@ -47,14 +64,13 @@ benchmark_mapper = benchmarks.PriceMapper(benchmark_repository)
 recipes_collection = recipe_mapper.find_all()
 stocks_collection = stock_mapper.find_all()
 
-two_yrs_ago = datetime.datetime.now().date() - datetime.timedelta(days=5*52*2)
-print "until:", two_yrs_ago
+print "until:", startDate
 
 for recipe in recipes_collection.loop():
 
-    today = datetime.datetime.now().date()
+    today = endDate
 
-    while today != two_yrs_ago:
+    while today != startDate:
 
         for stock in stocks_collection.loop():
             prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, today, limit=recipe.report_duration)
@@ -103,7 +119,7 @@ for recipe in recipes_collection.loop():
     # Only do 1 recipe for now.
     # break
 
-    
+
     # stocks_collection = stock_mapper.find_all()
     # for stock in stocks_collection.loop():
     # 	prices_collection = price_mapper.find_by_stock_id_in_range(stock.id, start_date, end_date)
