@@ -9,7 +9,6 @@ sys.path.append(os.path.abspath('.'))
 import json
 import MySQLdb
 import datetime
-import dateutil.relativedelta
 import argparse
 from sharpefolio import stocks, reports, calc, benchmarks
 
