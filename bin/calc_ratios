@@ -68,12 +68,10 @@ print "until:", startDate
 
 for recipe in recipes_collection.loop():
 
-    today = endDate
-
-    while today != startDate:
+    while endDate != startDate:
 
         for stock in stocks_collection.loop():
-            prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, today, limit=recipe.report_duration)
+            prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, endDate, limit=recipe.report_duration)
             prices = [price.closing_price for price in prices_collection.loop()]
             price_dates = [price.date for price in prices_collection.loop()]
 
@@ -83,12 +81,12 @@ for recipe in recipes_collection.loop():
                 break
 
             if first_price == None:
-                print 'no prices found for recipe: %d for stock: %d for day %s' % (recipe.id, stock.id, today)
+                print 'no prices found for recipe: %d for stock: %d for day %s' % (recipe.id, stock.id, endDate)
                 continue
 
             benchmark_prices = None
             if recipe.check_benchmark_id > 0:
-                benchmark_collection = benchmark_mapper.find_by_benchmark_id_until_day(recipe.check_benchmark_id, today, limit=recipe.report_duration)
+                benchmark_collection = benchmark_mapper.find_by_benchmark_id_until_day(recipe.check_benchmark_id, endDate, limit=recipe.report_duration)
                 benchmark_prices = [price.closing_price for price in benchmark_collection.loop()]
                 benchmark_dates = [price.date for price in benchmark_collection.loop()]
 
@@ -111,7 +109,7 @@ for recipe in recipes_collection.loop():
                 print 'error inserting recipe: %d for stock: %d for day: %s (%s)' % (recipe.id, stock.id, first_price.date, e)
                 pass
 
-            today -= datetime.timedelta(days=1)
+            endDate -= datetime.timedelta(days=1)
 
             # Only do 1 stock for now.
             break
