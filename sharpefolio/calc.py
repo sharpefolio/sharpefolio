@@ -90,18 +90,19 @@ class InvertedCorrelationPicker(object):
 				max_date_symbol = symbol
 
 		self.stocks = {}
-		for i, date in enumerate(self.dates[max_date_symbol]):
-			for symbol in stocks.keys():
-				if self.stocks.has_key(symbol) is False:
-					self.stocks[symbol] = []
+		if max_date_symbol != "":
+			for i, date in enumerate(self.dates[max_date_symbol]):
+				for symbol in stocks.keys():
+					if self.stocks.has_key(symbol) is False:
+						self.stocks[symbol] = []
 
-				insert_price = None
-				for price in stocks[symbol]:
-					if price.date == date:
-						insert_price = price.closing_price
-						break
+					insert_price = None
+					for price in stocks[symbol]:
+						if price.date == date:
+							insert_price = price.closing_price
+							break
 
-				self.stocks[symbol].append(insert_price)
+					self.stocks[symbol].append(insert_price)
 
 		# backward fill
 		for symbol in self.stocks.keys():
@@ -159,8 +160,13 @@ class InvertedCorrelationPicker(object):
 		# Create all possible combinations of the n top equites for the given portfolio size.
 		portfolios = list(combinations(range(0, stocks_len), portfolio_size))
 
+		if len(portfolios) == 0:
+			return ids
+
 		# Add up all the correlations for each possible combination
 		total_corr = [sum([cormat[x[0]][x[1]] for x in combinations(p, 2)]) for p in portfolios]
+
+		print "ids:", ids, "portfolios:", portfolios
 
 		# Find the portfolio with the smallest sum of correlations
 		picks = [ids[i] for i in portfolios[total_corr.index(np.nanmin(total_corr))]]

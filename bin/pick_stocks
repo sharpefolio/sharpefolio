@@ -1,0 +1,192 @@
+#!/usr/bin/env python
+
+import sys,os
+# Add the root of the repo to the include path.
+sys.path.append(os.path.abspath('.'))
+
+import json
+from sharpefolio import stocks
+from sharpefolio import reports
+from sharpefolio import calc
+import datetime
+import MySQLdb
+import argparse
+
+def parseDateArg(string):
+    return datetime.datetime.strptime("%s" % string, "%Y-%m-%d").date()
+
+json_data = open('variables.json')
+variables = json.load(json_data)
+
+connection = MySQLdb.connect(
+    host   = variables['mysql_host'],
+    user   = variables['mysql_user'],
+    passwd = variables['mysql_password'],
+    db     = variables['mysql_database']
+)
+
+parser = argparse.ArgumentParser(description='Pick stocks per recipe.')
+
+today = datetime.datetime.now().date()
+
+parser.add_argument('startDate', type = parseDateArg, help = 'The day to start calculating ratios for (further in the past)')
+parser.add_argument('--endDate', type = parseDateArg, default = today, help = 'The day to calculate the ratios up to (defaults to today)')
+
+args = parser.parse_args()
+
+startDate = args.startDate
+endDate = args.endDate
+
+# Set up stock mapper
+stock_repository = stocks.StockMysqlRepository(connection)
+stock_mapper = stocks.StockMapper(stock_repository)
+
+# Set up price mapper
+price_repository = stocks.PriceMysqlRepository(connection)
+price_mapper = stocks.PriceMapper(price_repository)
+
+# Set up ratio mapper
+ratio_repository = reports.RatioMysqlRepository(connection)
+ratio_mapper = reports.RatioMapper(ratio_repository)
+
+# Set up pick mapper
+pick_repository = reports.PickMysqlRepository(connection)
+pick_mapper = reports.PickMapper(pick_repository)
+
+# Set up recipe mapper
+recipe_repository = reports.RecipeMysqlRepository(connection)
+recipe_mapper = reports.RecipeMapper(recipe_repository)
+
+print "getting recipes..."
+recipes_collection = recipe_mapper.find_all()
+
+class Picker:
+
+    def __init__(self, recipe, start_date, end_date):
+        self.recipe = recipe
+
+        self.start_date = start_date
+        self.end_date = end_date
+
+        self.picks = None
+
+    def _picks_with_least_correlation(self):
+
+        top_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.recipe.n_stocks)
+
+        stock_prices = {}
+        for ratio in top_ratios:
+            stock_prices[ratio.stock_id] = price_mapper.find_by_stock_id_in_range(ratio.stock_id, self.start_date, self.end_date)
+
+        picker = calc.InvertedCorrelationPicker(stock_prices)
+
+        picked_stock_ids = picker.pick(self.recipe.n_stocks)
+
+        picks = {}
+        for picked_stock_id in picked_stock_ids:
+            for ratio in top_ratios:
+                if ratio.stock_id == picked_stock_id:
+                    stock = stock_mapper.find_by_id(ratio.stock_id)
+                    picks[stock.symbol] = ratio.ratio
+
+        return picks
+
+    def _picks_with_highest_ratio(self):
+        picks = {}
+
+        highest_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.recipe.n_stocks)
+
+        for ratio in highest_ratios:
+            symbol = stock_mapper.find_by_id(ratio.stock_id).symbol
+            picks[symbol] = ratio.ratio
+
+        return picks
+
+    def _distribute_picks_evenly(self):
+
+        n = len(self.picks)
+
+        dist = {}
+        for symbol in self.picks.keys():
+            dist[symbol] = 1.0 / n
+
+        return dist
+
+    def _distribute_picks_by_ratio(self):
+
+        n = sum(self.picks.values())
+
+        dist = {}
+        for symbol in self.picks.keys():
+            dist[symbol] = self.picks[symbol] / n
+
+        return dist
+
+    def create_picks(self):
+        # Check correlation of stocks
+        if self.recipe.check_correlation == True:
+            self.picks = self._picks_with_least_correlation()
+        else:
+            self.picks = self._picks_with_highest_ratio()
+
+        print "picks:", self.picks
+
+        # Distribute stock_prices
+        if recipe.distribution == 'ratio':
+            dist = self._distribute_picks_by_ratio()
+        else:
+            dist = self._distribute_picks_evenly()
+
+        # Store picks in DB
+        for symbol in self.picks.keys():
+            stock = stock_mapper.find_by_symbol(symbol)
+
+            weight = dist[symbol]
+
+            print "recipe_id:", self.recipe.id, "stock_id:", stock.id, "weight:", weight
+            
+            prices = price_mapper.find_by_stock_id_until_day(stock.id, until_date=self.end_date, limit=2)
+
+            gain = 0
+            today = prices.next()
+            yesterday = prices.next()
+            print "today:", today.closing_price, "yesterday:", yesterday.closing_price
+            if today > 0 and yesterday > 0:
+                gain = today.closing_price / yesterday.closing_price
+
+            pick = reports.Pick(self.recipe.id, stock.id, weight, gain, self.end_date.strftime('%Y-%m-%d'))
+            pick_mapper.insert(pick)
+
+last_date = price_mapper.find_last_date()
+
+for recipe in recipes_collection:
+
+    print "picking stocks for recipe", "formula:", recipe.report_formula, "duration:", recipe.report_duration, "n_stocks:", recipe.n_stocks, "correlation:", recipe.check_correlation, "distribution:", recipe.distribution, "check_benchmark_id:", recipe.check_benchmark_id
+
+    startDate = args.startDate
+    endDate = args.endDate
+
+    while endDate != startDate:
+
+        print "pick stocks for:", endDate
+
+        # picker = Picker(recipe, startDate, endDate)
+        # picker.create_picks()
+        # print "picked", picker.picks.keys(), "for:", endDate
+
+        try:
+            picker = Picker(recipe, startDate, endDate)
+            picker.create_picks()
+            print "picked", picker.picks.keys(), "for:", endDate
+        except Exception, e:
+            print 'error picking stocks for recipe: %d for day: %s (%s)' % (recipe.id, endDate, e)
+            pass
+
+        endDate -= datetime.timedelta(days=1)
+
+        # Stop after first day
+        # break 
+
+    # Stop after first recipe
+    # break
+

@@ -157,12 +157,13 @@ class RecipeMysqlRepository(dm.MysqlRepository):
 		self._database.commit()
 
 class Pick(object):
-	def __init__(self, recipe_id, report_id, stock_id, weight, id=None):
+	def __init__(self, recipe_id, stock_id, weight, gain, date, id=None):
 		self.id = id
-		self.report_id = report_id
 		self.recipe_id = recipe_id
 		self.stock_id = stock_id
 		self.weight = weight
+		self.gain = gain
+		self.date = date
 
 class PickMapper(dm.Mapper):
 	def insert(self, model):
@@ -173,9 +174,9 @@ class PickMysqlRepository(dm.MysqlRepository):
 		cursor = self._database.cursor()
 		cursor.execute('\
 			INSERT INTO `picks`\
-			(`recipe_id`, `report_id`, `stock_id`, `weight`)\
+			(`recipe_id`, `stock_id`, `weight`, `gain`, `date`)\
 			VALUES(%s, %s, %s, %s, %s)',
-			(model.recipe_id, model.report_id, model.stock_id, model.weight)
+			(model.recipe_id, model.stock_id, model.weight, model.gain, model.date)
 		)
 		self._database.commit()
 		model.id = cursor.lastrowid
