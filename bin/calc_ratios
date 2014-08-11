@@ -72,11 +72,11 @@ for recipe in recipes_collection.loop():
 
         for stock in stocks_collection.loop():
             prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, endDate, limit=recipe.report_duration)
-            prices = [price.closing_price for price in prices_collection.loop()]
-            price_dates = [price.date for price in prices_collection.loop()]
+            prices = [price.closing_price for price in prices_collection]
+            price_dates = [price.date for price in prices_collection]
 
             first_price = None
-            for price in prices_collection.loop():
+            for price in prices_collection:
                 first_price = price
                 break
 
@@ -87,8 +87,8 @@ for recipe in recipes_collection.loop():
             benchmark_prices = None
             if recipe.check_benchmark_id > 0:
                 benchmark_collection = benchmark_mapper.find_by_benchmark_id_until_day(recipe.check_benchmark_id, endDate, limit=recipe.report_duration)
-                benchmark_prices = [price.closing_price for price in benchmark_collection.loop()]
-                benchmark_dates = [price.date for price in benchmark_collection.loop()]
+                benchmark_prices = [price.closing_price for price in benchmark_collection]
+                benchmark_dates = [price.date for price in benchmark_collection]
 
                 if price_dates != benchmark_dates:
                     print "no suitable benchmarks found"
@@ -119,8 +119,8 @@ for recipe in recipes_collection.loop():
 
 
     # stocks_collection = stock_mapper.find_all()
-    # for stock in stocks_collection.loop():
+    # for stock in stocks_collection:
     # 	prices_collection = price_mapper.find_by_stock_id_in_range(stock.id, start_date, end_date)
-    # 	prices = [price.closing_price for price in prices_collection.loop()]
+    # 	prices = [price.closing_price for price in prices_collection]
 
 
