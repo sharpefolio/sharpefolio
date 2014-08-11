@@ -68,7 +68,10 @@ print "until:", startDate
 
 for recipe in recipes_collection.loop():
 
-    while endDate != startDate:
+    # Reset the date for every recipe
+    endDate = args.endDate
+
+    while endDate >= startDate:
 
         for stock in stocks_collection.loop():
             prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, endDate, limit=recipe.report_duration)
