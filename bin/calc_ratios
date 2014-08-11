@@ -112,7 +112,7 @@ for recipe in recipes_collection.loop():
             endDate -= datetime.timedelta(days=1)
 
             # Only do 1 stock for now.
-            break
+            # break
 
     # Only do 1 recipe for now.
     # break
