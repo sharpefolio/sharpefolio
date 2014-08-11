@@ -109,7 +109,7 @@ for recipe in recipes_collection.loop():
                 print 'error inserting recipe: %d for stock: %d for day: %s (%s)' % (recipe.id, stock.id, first_price.date, e)
                 pass
 
-            endDate -= datetime.timedelta(days=1)
+        endDate -= datetime.timedelta(days=1)
 
             # Only do 1 stock for now.
             # break
