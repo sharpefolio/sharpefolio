@@ -174,7 +174,7 @@ class RecipePriceMysqlRepository(dm.MysqlRepository):
 		cursor.execute('\
 			INSERT INTO `recipe_prices`\
 			(`recipe_id`, `date`, `closing_price`)\
-			VALUES(%s, %s, %s, %s)',
+			VALUES(%s, %s, %s)',
 			(model.recipe_id, model.date, model.closing_price)
 		)
 		self._database.commit()
@@ -293,6 +293,9 @@ class PickMapper(dm.Mapper):
 	def insert(self, model):
 		self._repository.insert(model)
 
+	def get_picks_for_recipe(self, recipe_id, date):
+		return self._repository.get_picks_for_recipe(recipe_id, date)
+
 class PickMysqlRepository(dm.MysqlRepository):
 	def insert(self, model):
 		cursor = self._database.cursor()
@@ -304,3 +307,10 @@ class PickMysqlRepository(dm.MysqlRepository):
 		)
 		self._database.commit()
 		model.id = cursor.lastrowid
+
+	def get_picks_for_recipe(self, recipe_id, date):
+		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
+		# print "SELECT * FROM `picks` WHERE recipe_id = %s AND `date` = %s" % (recipe_id, date.isoformat(),)
+		cursor.execute('SELECT * FROM `picks` WHERE recipe_id = %s AND `date` = %s', (recipe_id, date.isoformat(),))
+		return dm.Collection(Pick, cursor)
+
