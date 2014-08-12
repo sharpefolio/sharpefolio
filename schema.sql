@@ -109,4 +109,23 @@ CREATE TABLE `benchmark_prices` (
 
 /* 11:43:47 PM Sharpefolio DB */ ALTER TABLE `picks` ADD INDEX (`date`);
 
+CREATE TABLE `recipe_prices` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `recipe_id` int(11) unsigned NOT NULL,
+  `date` date NOT NULL,
+  `closing_price` double(10,4) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_price` (`recipe_id`,`date`)
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `recipe_ratios` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `recipe_id` int(11) unsigned NOT NULL,
+  `ratio` double(10,6) DEFAULT NULL,
+  `date` date NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_ratio_per_day` (`recipe_id`,`date`),
+  KEY `ratio` (`ratio`),
+  KEY `recipe_id` (`recipe_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=0 DEFAULT CHARSET=utf8mb4;
 
