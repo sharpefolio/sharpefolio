@@ -66,7 +66,7 @@ class ReportMysqlRepository(dm.MysqlRepository):
 
 	def find_until_date_with_duration_and_formula(self, until_date, duration, formula):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
-		cursor.execute('SELECT * FROM `reports` WHERE date <= %s AND duration = %s AND formula = %s', 
+		cursor.execute('SELECT * FROM `reports` WHERE date <= %s AND duration = %s AND formula = %s',
 			(until_date, duration, formula)
 		)
 		return dm.Collection(Report, cursor, self._datamap)
@@ -90,6 +90,9 @@ class RatioMapper(dm.Mapper):
 	def insert(self, model):
 		self._repository.insert(model)
 
+	def batch_insert(self, models):
+		self._repository.batch_insert(models)
+
 	def find_highest_ratio(self, recipe_id, end_date, limit):
 		return self._repository.find_highest_ratio(recipe_id, end_date, limit)
 
@@ -101,6 +104,19 @@ class RatioMysqlRepository(dm.MysqlRepository):
 			(`stock_id`, `recipe_id`, `ratio`, `date`)\
 			VALUES(%s, %s, %s, %s)',
 			(model.stock_id, model.recipe_id, model.ratio, model.date)
+		)
+		self._database.commit()
+
+	def batch_insert(self, models):
+		inserts = []
+		for model in models:
+			inserts.append("(%d, %s, %f, '%s')" % (model.stock_id, model.recipe_id, model.ratio, model.date))
+
+		cursor = self._database.cursor()
+		cursor.execute('\
+			INSERT IGNORE INTO `ratios`\
+			(`stock_id`, `recipe_id`, `ratio`, `date`)\
+			VALUES%s;' % (','.join(inserts),)
 		)
 		self._database.commit()
 

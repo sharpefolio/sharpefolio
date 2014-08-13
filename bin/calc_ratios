@@ -33,6 +33,7 @@ parser.add_argument('startDate', type = parseDateArg, help = 'The day to start c
 parser.add_argument('--endDate', type = parseDateArg, default = today, help = 'The day to calculate the ratios up to (defaults to today)')
 parser.add_argument('--recipeStart', type = int, default = None, help = 'The recipe id to start at.')
 parser.add_argument('--recipeEnd',   type = int, default = None, help = 'The recipe id to end at.')
+parser.add_argument('--batchSize',   type = int, default = 1000, help = 'How big to batch the inserts.')
 
 args = parser.parse_args()
 
@@ -66,6 +67,8 @@ recipes_collection = recipe_mapper.find_all()
 stocks_collection = stock_mapper.find_all()
 
 print "until:", startDate
+
+ratio_stack = []
 
 for recipe in recipes_collection.loop():
 
@@ -119,13 +122,22 @@ for recipe in recipes_collection.loop():
             ratio_entry = reports.Ratio(stock.id, recipe.id, value, first_price.date.strftime('%Y-%m-%d'))
 
             try:
-                ratio_mapper.insert(ratio_entry)
-                print 'inserted recipe: %d for stock: %d for day: %s value: %f' % (recipe.id, stock.id, first_price.date, value)
+                print 'prepared recipe: %d for stock: %d for day: %s value: %f' % (recipe.id, stock.id, first_price.date, value)
+                ratio_stack.append(ratio_entry)
+                if len(ratio_stack) >= 100:
+                    ratio_mapper.batch_insert(ratio_stack)
+                    ratio_stack[:] = []
+                    print 'FLUSHED IT'
             except Exception, e:
+                ratio_stack[:] = []
+                print 'FLUSHED IT ANYWAY'
                 print 'error inserting recipe: %d for stock: %d for day: %s (%s)' % (recipe.id, stock.id, first_price.date, e)
                 pass
 
         endDate -= datetime.timedelta(days=1)
+        ratio_mapper.batch_insert(ratio_stack)
+        ratio_stack[:] = []
+        print 'FLUSHED IT'
 
             # Only do 1 stock for now.
             # break
