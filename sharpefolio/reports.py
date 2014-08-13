@@ -113,7 +113,11 @@ class RatioMysqlRepository(dm.MysqlRepository):
 
 		inserts = []
 		for model in models:
-			inserts.append("(%d, %s, %f, '%s')" % (model.stock_id, model.recipe_id, model.ratio, model.date))
+			if model.ratio == model.ratio:
+				inserts.append("(%d, %s, %f, '%s')" % (model.stock_id, model.recipe_id, model.ratio, model.date))
+			else:
+				# Use null if ratio is NaN.
+				inserts.append("(%d, %s, null, '%s')" % (model.stock_id, model.recipe_id, model.date))
 
 		cursor = self._database.cursor()
 		cursor.execute('\
