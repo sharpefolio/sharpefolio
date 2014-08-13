@@ -108,6 +108,9 @@ class RatioMysqlRepository(dm.MysqlRepository):
 		self._database.commit()
 
 	def batch_insert(self, models):
+		if len(models) == 0:
+			return
+
 		inserts = []
 		for model in models:
 			inserts.append("(%d, %s, %f, '%s')" % (model.stock_id, model.recipe_id, model.ratio, model.date))
