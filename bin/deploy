@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+timestamp=$(date +%s)
+build_file=$timestamp.app.tar.gz
+
+mkdir .builds/$timestamp
+rsync -av --exclude=".builds" --exclude=".git" . .builds/$timestamp/app
+
+cd .builds/$timestamp
+tar -zcvf $build_file app
+cd ../..
+
+# You'll need your ssh key to be in the same place.
+echo "SCPing code to instances."
+parallel-scp -h ec2-ips -x "-i $HOME/.ssh/sharpefolio-all.pem" -l ubuntu .builds/$timestamp/$build_file /home/ubuntu/$build_file
+
+# Extract the release.
+echo "Extracting the release."
+parallel-ssh -h ec2-ips -x "-i $HOME/.ssh/sharpefolio-all.pem" -l ubuntu "mkdir -p releases/$timestamp && tar -zxvf $build_file -C releases/$timestamp/"
+# Update the symlink and permissions.
+echo "Making bin files executable."
+parallel-ssh -h ec2-ips -x "-i $HOME/.ssh/sharpefolio-all.pem" -l ubuntu "chmod -R +x releases/$timestamp/app/bin"
+echo "Creating a symlink."
+parallel-ssh -h ec2-ips -x "-i $HOME/.ssh/sharpefolio-all.pem" -l ubuntu "rm current; ln -s releases/$timestamp/app current"
