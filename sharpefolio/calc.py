@@ -135,6 +135,8 @@ class InvertedCorrelationPicker(object):
         picker.pick(4)
         '''
 
+        print "stocks:", self.stocks
+
         price_len = 0
         stocks_len = len(self.stocks)
         ids = [id for id in self.stocks.keys()]
@@ -148,9 +150,9 @@ class InvertedCorrelationPicker(object):
             if length > price_len:
                 price_len = length
 
-        if portfolio_size > price_len:
+        if portfolio_size > stocks_len:
             # Pick everything!
-            print "price length too small, pick everything!"
+            print "stocks length", stocks_len, "too small, pick everything!"
             return ids
 
         # Create an empty datastructure to hold the daily returns

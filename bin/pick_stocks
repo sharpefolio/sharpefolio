@@ -11,6 +11,7 @@ from sharpefolio import calc
 import datetime
 import MySQLdb
 import argparse
+import sys
 
 def parseDateArg(string):
     return datetime.datetime.strptime("%s" % string, "%Y-%m-%d").date()
@@ -72,14 +73,22 @@ class Picker:
 
     def _picks_with_least_correlation(self):
         picks = {}
-        top_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.end_date, self.recipe.n_stocks)
+        top_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.end_date, self.recipe.n_stocks * 2)
+        print "top ratios count:", top_ratios.count()
         if top_ratios.count() == 0:
             return {}
 
         stock_prices = {}
         for ratio in top_ratios:
+            print "ratio:", ratio
             stock_prices[ratio.stock_id] = price_mapper.find_by_stock_id_in_range(ratio.stock_id, self.start_date, self.end_date)
+            print "stock_prices:", stock_prices
 
+        if len(stock_prices) != top_ratios.count():
+            print "stock prices length not same as top ratios!"
+            sys.exit()
+
+        
         picker = calc.InvertedCorrelationPicker(stock_prices)
 
         picked_stock_ids = picker.pick(self.recipe.n_stocks)
@@ -96,6 +105,7 @@ class Picker:
         picks = {}
 
         highest_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.end_date, self.recipe.n_stocks)
+        print "highest ratios count:", highest_ratios.count()
         if highest_ratios.count() == 0:
             return picks
 
@@ -162,7 +172,7 @@ last_date = price_mapper.find_last_date()
 
 for recipe in recipes_collection:
 
-    print "picking stocks for recipe", recipe.id, "formula:", recipe.report_formula, "duration:", recipe.report_duration, "n_stocks:", recipe.n_stocks, "correlation:", recipe.check_correlation, "distribution:", recipe.distribution, "check_benchmark_id:", recipe.check_benchmark_id
+    print "picking stocks for recipe", recipe.id, "formula:", recipe.report_formula, "duration:", recipe.report_duration, "n_stocks:", recipe.n_stocks, "correlation:", recipe.check_correlation, "distribution:", recipe.distribution, "check_benchmark_id:", recipe.check_benchmark_id, "date:", endDate
 
     startDate = args.startDate
     endDate = args.endDate
