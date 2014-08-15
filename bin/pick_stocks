@@ -11,7 +11,6 @@ from sharpefolio import calc
 import datetime
 import MySQLdb
 import argparse
-import sys
 
 def parseDateArg(string):
     return datetime.datetime.strptime("%s" % string, "%Y-%m-%d").date()
