@@ -129,16 +129,22 @@ class InvertedCorrelationPicker(object):
         if len(self.stocks) == 0:
             self.stocks = stocks
 
+        self.price_len = 0
+        self.stocks_len = 0
+        self.cov_data = []
+        self.cormat = []
+        self.portfolios = []
+        self.total_corr = []
+        self.nanmin = []
+
     def pick(self, portfolio_size=4):
 
         '''
         picker.pick(4)
         '''
 
-        print "stocks:", self.stocks
-
-        price_len = 0
-        stocks_len = len(self.stocks)
+        self.price_len = 0
+        self.stocks_len = len(self.stocks)
         ids = [id for id in self.stocks.keys()]
 
         # Determine depth of matrix
@@ -147,16 +153,16 @@ class InvertedCorrelationPicker(object):
                 length = self.stocks[symbol].count()
             else:
                 length = len(self.stocks[symbol])
-            if length > price_len:
-                price_len = length
+            if length > self.price_len:
+                self.price_len = length
 
-        if portfolio_size > stocks_len:
+        if portfolio_size > self.stocks_len:
             # Pick everything!
-            print "stocks length", stocks_len, "too small, pick everything!"
+            print "stocks length", self.stocks_len, "too small, pick everything!"
             return ids
 
         # Create an empty datastructure to hold the daily returns
-        cov_data = np.zeros((price_len, stocks_len))
+        self.cov_data = np.zeros((self.price_len, self.stocks_len))
 
         # Grab the daily returns for those stocks and put them in cov index
         for i, symbol in enumerate(ids):
@@ -165,24 +171,24 @@ class InvertedCorrelationPicker(object):
             # if n < price_len:
                 # Forward fill
                 # prices += prices[-1:]*(price_len-n)
-            cov_data[:,i] = prices
+            self.cov_data[:,i] = prices
 
         # Make a correlation matrix
-        cormat = np.corrcoef(cov_data.transpose())
+        self.cormat = np.corrcoef(self.cov_data.transpose())
 
         # Create all possible combinations of the n top equites for the given portfolio size.
-        portfolios = list(combinations(range(0, stocks_len), portfolio_size))
+        self.portfolios = list(combinations(range(0, self.stocks_len), portfolio_size))
 
-        if len(portfolios) == 0:
+        if len(self.portfolios) == 0:
             print "portfolio length is empty, return ids"
             return ids[:portfolio_size]
 
         # Add up all the correlations for each possible combination
-        total_corr = [sum([cormat[x[0]][x[1]] for x in combinations(p, 2)]) for p in portfolios]
+        self.total_corr = [sum([self.cormat[x[0]][x[1]] for x in combinations(p, 2)]) for p in self.portfolios]
 
         # Find the portfolio with the smallest sum of correlations
         try:
-            picks = [ids[i] for i in portfolios[total_corr.index(np.nanmin(total_corr))]]
+            picks = [ids[i] for i in self.portfolios[self.total_corr.index(np.nanmin(self.total_corr))]]
         except Exception:
             print "something went wrong with picks, return ids"
             return ids[:portfolio_size]
