@@ -25,7 +25,7 @@ connection = MySQLdb.connect(
     db     = variables['mysql_database']
 )
 
-parser = argparse.ArgumentParser(description='Pick stocks per recipe.')
+parser = argparse.ArgumentParser(description='Calculate prices per recipe.')
 
 today = datetime.datetime.now().date()
 
@@ -65,31 +65,25 @@ for recipe in recipes_collection:
 
     while startDate <= endDate:
 
-        # print "recipe_id: ", recipe.id, "startDate:", startDate
         picks = pick_mapper.get_picks_for_recipe(recipe.id, startDate)
 
         if picks.count() == 0:
-            print "picks is empty for recipe: %d and day: %s" % (recipe.id, startDate)
+            print "no stock pick data for recipe: %d and day: %s" % (recipe.id, startDate)
             startDate += datetime.timedelta(days=1)
             continue
 
         gain = 0
         for pick in picks:
-            print "gain:", (pick.gain - 1), "*", pick.weight, "=", (pick.gain - 1) * pick.weight
             gain += (pick.gain - 1) * pick.weight
 
         gain *= 1000
         old_recipe_index = recipe_index
         recipe_index += gain
-        print "recipe", recipe.id, "recipe_index", old_recipe_index, "+", gain, "=", recipe_index
-
-        # price = reports.RecipePrice(recipe.id, startDate, recipe_index)
-        # price_mapper.insert(price)
 
         try:
             price = reports.RecipePrice(recipe.id, startDate, recipe_index)
             price_mapper.insert(price)
-            print "inserted recipe index:", recipe_index, "with recipe id", recipe.id, "for:", startDate
+            print "inserted recipe index:", recipe_index, "with recipe id", recipe.id, "and price", price, "for:", startDate
         except Exception, e:
             print 'error inserting recipe index for recipe: %d for day: %s (%s)' % (recipe.id, endDate, e)
             pass
