@@ -41,9 +41,6 @@ combos = {
             'report_formula': ['sharpe', 'sortino']
         }
 
-# Truncate recipes table first.
-recipe_mapper.truncate()
-
 for n_stocks in combos['n_stocks']:
         for check_correlation in combos['check_correlation']:
             for check_benchmark_id in combos['check_benchmark_id']:
