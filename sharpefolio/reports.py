@@ -129,7 +129,7 @@ class RatioMysqlRepository(dm.MysqlRepository):
 
 	def find_highest_ratio(self, recipe_id, end_date, limit):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
-		cursor.execute('SELECT * FROM `ratios` WHERE recipe_id = %s AND `date` <= %s ORDER BY ratio DESC LIMIT %s', (recipe_id, end_date.isoformat(), limit))
+		cursor.execute('SELECT * FROM `ratios` WHERE recipe_id = %s AND `date` = %s ORDER BY ratio DESC LIMIT %s', (recipe_id, end_date.isoformat(), limit))
 		return dm.Collection(Ratio, cursor)
 
 class Recipe(object):
@@ -272,7 +272,7 @@ class RecipeRatioMysqlRepository(dm.MysqlRepository):
 
 	def find_highest_ratio(self, recipe_id, end_date, limit):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
-		cursor.execute('SELECT * FROM `ratios` WHERE recipe_id = %s AND `date` <= %s ORDER BY ratio DESC LIMIT %s', (recipe_id, end_date.isoformat(), limit))
+		cursor.execute('SELECT * FROM `ratios` WHERE recipe_id = %s AND `date` = %s ORDER BY ratio DESC LIMIT %s', (recipe_id, end_date.isoformat(), limit))
 		return dm.Collection(Ratio, cursor)
 
 

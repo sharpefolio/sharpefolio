@@ -42,8 +42,12 @@ stock_repository = stocks.StockMysqlRepository(connection)
 stock_mapper = stocks.StockMapper(stock_repository)
 
 # Set up price mapper
-price_repository = reports.RecipePriceMysqlRepository(connection)
-price_mapper = reports.RecipePriceMapper(price_repository)
+price_repository = stocks.RecipePriceMysqlRepository(connection)
+price_mapper = stocks.RecipePriceMapper(price_repository)
+
+# Set up ratio mapper
+ratio_repository = reports.RecipeRatioMysqlRepository(connection)
+ratio_mapper = reports.RecipeRatioMapper(ratio_repository)
 
 # Set up pick mapper
 pick_repository = reports.PickMysqlRepository(connection)
@@ -61,39 +65,26 @@ for recipe in recipes_collection:
     startDate = args.startDate
     endDate = args.endDate
 
-    recipe_index = 1000
+    while endDate != startDate:
 
-    while startDate <= endDate:
+        prices_collection = price_mapper.find_by_recipe_id_until_day(recipe.id, endDate)
+        prices = [price.closing_price for price in prices_collection]
 
-        # print "recipe_id: ", recipe.id, "startDate:", startDate
-        picks = pick_mapper.get_picks_for_recipe(recipe.id, startDate)
-
-        if picks.count() == 0:
-            print "picks is empty for recipe: %d and day: %s" % (recipe.id, startDate)
-            startDate += datetime.timedelta(days=1)
-            continue
-
-        gain = 0
-        for pick in picks:
-            print "gain:", (pick.gain - 1), "*", pick.weight, "=", (pick.gain - 1) * pick.weight
-            gain += (pick.gain - 1) * pick.weight
-
-        gain *= 1000
-        old_recipe_index = recipe_index
-        recipe_index += gain
-        print "recipe", recipe.id, "recipe_index", old_recipe_index, "+", gain, "=", recipe_index
-
-        # price = reports.RecipePrice(recipe.id, startDate, recipe_index)
-        # price_mapper.insert(price)
+        ratio = calc.Ratio(prices)
+        sharpe_ratio = ratio.sharpe()
 
         try:
-            price = reports.RecipePrice(recipe.id, startDate, recipe_index)
-            price_mapper.insert(price)
-            print "inserted recipe index:", recipe_index, "with recipe id", recipe.id, "for:", startDate
-        except Exception, e:
-            print 'error inserting recipe index for recipe: %d for day: %s (%s)' % (recipe.id, endDate, e)
-            pass
+            ratio_entry = reports.RecipeRatio(recipe.id, sharpe_ratio, endDate.strftime('%Y-%m-%d'))
+            ratio_mapper.insert(ratio_entry)
+            print 'inserted ratio for recipe: %d for day: %s value: %f' % (recipe.id, endDate.date, sharpe_ratio)
+        except Exception:
+            print "inserting ratio failed"
 
-        startDate += datetime.timedelta(days=1)
+        endDate -= datetime.timedelta(days=1)
 
+        # Stop after first day
+        # break 
+
+    # Stop after first recipe
+    # break
 

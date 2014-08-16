@@ -72,13 +72,16 @@ class Picker:
 
     def _picks_with_least_correlation(self):
         picks = {}
-        top_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.end_date, self.recipe.n_stocks)
+        top_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.end_date, self.recipe.n_stocks * 2)
         if top_ratios.count() == 0:
-            return {}
+            raise Exception("top ratios count is zero")
 
         stock_prices = {}
         for ratio in top_ratios:
             stock_prices[ratio.stock_id] = price_mapper.find_by_stock_id_in_range(ratio.stock_id, self.start_date, self.end_date)
+
+        if len(stock_prices) != top_ratios.count():
+            raise Exception("stock prices length not same as top ratios!")
 
         picker = calc.InvertedCorrelationPicker(stock_prices)
 
@@ -162,16 +165,12 @@ last_date = price_mapper.find_last_date()
 
 for recipe in recipes_collection:
 
-    print "picking stocks for recipe", recipe.id, "formula:", recipe.report_formula, "duration:", recipe.report_duration, "n_stocks:", recipe.n_stocks, "correlation:", recipe.check_correlation, "distribution:", recipe.distribution, "check_benchmark_id:", recipe.check_benchmark_id
+    print "picking stocks for recipe", recipe.id, "formula:", recipe.report_formula, "duration:", recipe.report_duration, "n_stocks:", recipe.n_stocks, "correlation:", recipe.check_correlation, "distribution:", recipe.distribution, "check_benchmark_id:", recipe.check_benchmark_id, "date:", endDate
 
     startDate = args.startDate
     endDate = args.endDate
 
     while endDate != startDate:
-
-        # picker = Picker(recipe, startDate, endDate)
-        # picker.create_picks()
-        # print "picked", picker.picks.keys(), "for:", endDate
 
         try:
             picker = Picker(recipe, startDate, endDate)
