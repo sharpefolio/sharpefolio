@@ -34,7 +34,6 @@ parser.add_argument('--endDate', type = parseDateArg, default = today, help = 'T
 parser.add_argument('--recipeStart', type = int, default = None, help = 'The recipe id to start at.')
 parser.add_argument('--recipeEnd',   type = int, default = None, help = 'The recipe id to end at.')
 parser.add_argument('--batchSize',   type = int, default = 1000, help = 'How big to batch the inserts.')
-parser.add_argument('--calcRecipePrices', type = int, default = None, help = 'Calculate ratios for recipes prices')
 
 args = parser.parse_args()
 
@@ -50,12 +49,8 @@ stock_repository = stocks.StockMysqlRepository(connection)
 stock_mapper = stocks.StockMapper(stock_repository)
 
 # Set up price mapper
-if calcRecipePrices == 0:
-    price_repository = stocks.PriceMysqlRepository(connection)
-    price_mapper = stocks.PriceMapper(price_repository)
-else:
-    price_repository = stocks.RecipePriceMysqlRepository(connection)
-    price_mapper = stocks.RecipePriceMapper(price_repository)
+price_repository = stocks.PriceMysqlRepository(connection)
+price_mapper = stocks.PriceMapper(price_repository)
 
 # Set up recipe mapper
 recipe_repository = reports.RecipeMysqlRepository(connection)
