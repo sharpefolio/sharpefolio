@@ -31,6 +31,8 @@ today = datetime.datetime.now().date()
 
 parser.add_argument('startDate', type = parseDateArg, help = 'The day to start calculating ratios for (further in the past)')
 parser.add_argument('--endDate', type = parseDateArg, default = today, help = 'The day to calculate the ratios up to (defaults to today)')
+parser.add_argument('--recipeStart', type = int, default = None, help = 'The recipe id to start at.')
+parser.add_argument('--recipeEnd',   type = int, default = None, help = 'The recipe id to end at.')
 
 args = parser.parse_args()
 
@@ -57,6 +59,19 @@ print "getting recipes..."
 recipes_collection = recipe_mapper.find_all()
 
 for recipe in recipes_collection:
+
+    if recipe.check_correlation == 1:
+        if recipe.n_stocks == 16 or recipe.n_stocks == 30:
+            print 'skipping recipe (recipeStart) ', recipe.id, recipe.n_stocks
+            continue
+
+    if args.recipeStart and recipe.id < args.recipeStart:
+        print 'skipping recipe (recipeStart) ', recipe.id
+        continue
+
+    if args.recipeEnd and recipe.id > args.recipeEnd:
+        print 'skipping recipe (recipeEnd) ', recipe.id
+        continue
 
     startDate = args.startDate
     endDate = args.endDate

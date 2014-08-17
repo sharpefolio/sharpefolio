@@ -167,6 +167,11 @@ last_date = price_mapper.find_last_date()
 
 for recipe in recipes_collection:
 
+    if recipe.check_correlation == 1:
+        if recipe.n_stocks == 16 or recipe.n_stocks == 30:
+            print 'skipping recipe (recipeStart) ', recipe.id, recipe.n_stocks
+            continue
+
     if args.recipeStart and recipe.id < args.recipeStart:
         print 'skipping recipe (recipeStart) ', recipe.id
         continue
