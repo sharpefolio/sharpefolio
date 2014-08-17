@@ -89,11 +89,11 @@ for recipe in recipes_collection:
 
         gain = 0
         for pick in picks:
-            gain += (pick.gain - 1) * pick.weight
+            gain += ((pick.gain - 1) * pick.weight)
 
-        gain *= 1000
-        old_recipe_index = recipe_index
-        recipe_index += gain
+        print "recipe_index:", recipe_index, "*", 1 + gain
+        recipe_index *= 1 + gain
+        print "=", recipe_index
 
         try:
             price = reports.RecipePrice(recipe.id, startDate, recipe_index)
