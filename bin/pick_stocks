@@ -153,11 +153,11 @@ class Picker:
             weight = dist[symbol]
 
             prices = price_mapper.find_by_stock_id_until_day(stock.id, until_date=self.end_date, limit=2)
-            gain = 0
+            gain = None
             if prices.count() == 2:
                 today = prices.next()
                 yesterday = prices.next()
-                if today.closing_price > 0 and yesterday.closing_price > 0:
+                if today.date == self.end_date and today.closing_price > 0 and yesterday.closing_price > 0:
                     gain = today.closing_price / yesterday.closing_price
 
             pick = reports.Pick(self.recipe.id, stock.id, weight, gain, self.end_date.strftime('%Y-%m-%d'))
