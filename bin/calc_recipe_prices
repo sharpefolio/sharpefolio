@@ -90,8 +90,4 @@ for recipe in recipes_collection:
 
         startDate += datetime.timedelta(days=1)
 
-        # break
-
-    break
-
 
