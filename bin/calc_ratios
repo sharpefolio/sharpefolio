@@ -39,7 +39,6 @@ args = parser.parse_args()
 
 startDate = args.startDate
 endDate = args.endDate
-calcRecipePrices = args.calcRecipePrices
 
 report_repository = reports.ReportMysqlRepository(connection)
 report_mapper = reports.ReportMapper(report_repository)
