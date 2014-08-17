@@ -334,6 +334,6 @@ class PickMysqlRepository(dm.MysqlRepository):
 	def get_picks_for_recipe(self, recipe_id, date):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
 		# print "SELECT * FROM `picks` WHERE recipe_id = %s AND `date` = %s" % (recipe_id, date.isoformat(),)
-		cursor.execute('SELECT * FROM `picks` WHERE recipe_id = %s AND `date` = %s', (recipe_id, date.isoformat(),))
+		cursor.execute('SELECT * FROM `picks` WHERE recipe_id = %s AND `date` = %s AND `gain` IS NOT NULL', (recipe_id, date.isoformat(),))
 		return dm.Collection(Pick, cursor)
 
