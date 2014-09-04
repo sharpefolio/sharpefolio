@@ -53,8 +53,7 @@ for folder_path in os.listdir(path):
                         # insert new stock
                         stock = stocks.Stock(symbol=info['Symbol'], company=info['Symbol'])
                         stock_mapper.insert(stock)
-                        # get new stock id
-                        stock = stock_mapper.find_by_symbol(info['Symbol'])
+                        stock.id = stock_mapper.get_last_insert_id()
 
                     date = datetime.datetime.strptime(info['Date'], '%d-%b-%Y')
 

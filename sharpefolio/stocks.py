@@ -20,7 +20,11 @@ class StockMapper(dm.Mapper):
 	def find_all(self):
 		return self._repository.find_all()
 
+	def get_last_insert_id(self):
+		return self._repository.get_last_insert_id()
+
 class StockMysqlRepository(dm.MysqlRepository):
+
 	def insert(self, model):
 		if model.id == None:
 			self._insert_no_pk(model)
@@ -53,6 +57,9 @@ class StockMysqlRepository(dm.MysqlRepository):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
 		cursor.execute('SELECT * FROM `stocks`')
 		return dm.Collection(Stock, cursor)
+
+	def get_last_insert_id(self):
+		return self._database.insert_id()
 
 class Price(object):
 	def __init__(self, stock_id, date, closing_price, change, id = None):
