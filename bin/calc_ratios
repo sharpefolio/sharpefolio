@@ -90,9 +90,13 @@ for recipe in recipes_collection.loop():
             continue
 
         for stock in stocks_collection.loop():
-            prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, endDate, limit=recipe.report_duration)
-            prices = [price.closing_price for price in prices_collection]
-            price_dates = [price.date for price in prices_collection]
+            try:
+                prices_collection = price_mapper.find_by_stock_id_until_day(stock.id, endDate, limit=recipe.report_duration)
+                prices = [price.closing_price for price in prices_collection]
+                price_dates = [price.date for price in prices_collection]
+            except Exception:
+                print 'no prices found for report_duration: %d report_formula: %s check_benchmark_id: %d for stock: %d for day %s' % (recipe.report_duration, recipe.report_formula, recipe.check_benchmark_id, stock.id, endDate)
+                continue
 
             first_price = None
             for price in prices_collection:
