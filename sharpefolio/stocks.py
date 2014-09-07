@@ -9,7 +9,7 @@ class Stock(object):
 
 class StockMapper(dm.Mapper):
 	def insert(self, model):
-		self._repository.insert(model)
+		return self._repository.insert(model)
 
 	def find_by_symbol(self, symbol):
 		return self._repository.find_by_symbol(symbol)
@@ -21,21 +21,24 @@ class StockMapper(dm.Mapper):
 		return self._repository.find_all()
 
 class StockMysqlRepository(dm.MysqlRepository):
+
 	def insert(self, model):
 		if model.id == None:
-			self._insert_no_pk(model)
+			return self._insert_no_pk(model)
 		else:
-			self._insert_full(model)
+			return self._insert_full(model)
 
 	def _insert_full(self, model):
 		cursor = self._database.cursor()
 		cursor.execute('INSERT INTO `stocks` (`id`, `symbol`, `company`) VALUES(%s, %s, %s)', (model.id, model.symbol, model.company))
 		self._database.commit()
+		return model.id
 
 	def _insert_no_pk(self, model):
 		cursor = self._database.cursor()
 		cursor.execute('INSERT INTO `stocks` (`symbol`, `company`) VALUES(%s, %s)', (model.symbol, model.company))
 		self._database.commit()
+		return cursor.lastrowid
 
 	def find_by_symbol(self, symbol):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
