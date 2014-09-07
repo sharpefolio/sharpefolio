@@ -6,6 +6,7 @@ import MySQLdb
 import datetime
 from sharpefolio import stocks
 import json
+import argparse
 
 json_data = open('variables.json')
 variables = json.load(json_data)
@@ -17,6 +18,11 @@ connection = MySQLdb.connect(
     db     = variables['mysql_database']
 )
 
+parser = argparse.ArgumentParser(description='Sync with the prices from the EOD files.')
+parser.add_argument('src', type=str)
+args = parser.parse_args()
+src_folder = args.src + "/"
+
 # Set up stock mapper
 stock_repository = stocks.StockMysqlRepository(connection)
 stock_mapper = stocks.StockMapper(stock_repository)
@@ -25,49 +31,46 @@ stock_mapper = stocks.StockMapper(stock_repository)
 price_repository = stocks.PriceMysqlRepository(connection)
 price_mapper = stocks.PriceMapper(price_repository)
 
-path = "./EOD/"
-for folder_path in os.listdir(path):
-    abs_folder_path = path + folder_path
-    if not os.path.isdir(abs_folder_path):
-        continue
+path = "./EOD/" + src_folder.upper()
+print "importing from", path
+for file_path in os.listdir(path):
 
-    for file_path in os.listdir(abs_folder_path):
-        abs_file_path = abs_folder_path + "/" + file_path
+    abs_file_path = path + file_path
 
-        with open(abs_file_path, 'rb') as csvfile:
-            reader = csv.reader(csvfile, delimiter=',', quotechar='|')
-            rownum = 0
-            info = {}
-            headers = []
-            for row in reader:
-                if rownum == 0:
-                    headers = row
-                else:
-                    for i, header in enumerate(headers):
-                        info[headers[i]] = row[i]
+    with open(abs_file_path, 'rb') as csvfile:
+        reader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        rownum = 0
+        info = {}
+        headers = []
+        for row in reader:
+            if rownum == 0:
+                headers = row
+            else:
+                for i, header in enumerate(headers):
+                    info[headers[i]] = row[i]
 
-                    # find stock id
-                    try:
-                        stock = stock_mapper.find_by_symbol(info['Symbol'])
-                    except Exception:
-                        # insert new stock
-                        stock = stocks.Stock(symbol=info['Symbol'], company=info['Symbol'])
-                        stock.id = stock_mapper.insert(stock)
+                # find stock id
+                try:
+                    stock = stock_mapper.find_by_symbol(info['Symbol'])
+                except Exception:
+                    # insert new stock
+                    stock = stocks.Stock(symbol=info['Symbol'], company=info['Symbol'])
+                    stock.id = stock_mapper.insert(stock)
 
-                    date = datetime.datetime.strptime(info['Date'], '%d-%b-%Y')
+                date = datetime.datetime.strptime(info['Date'], '%d-%b-%Y')
 
-                    try:
-                        price = stocks.Price(stock_id=stock.id, date=date, closing_price=info['Close'], change=0)
-                        price_mapper.insert(price)
-                    except MySQLdb.IntegrityError, e:
-                        print '(%d) error inserting %s for %s (%s)' % (stock.id, stock.symbol, date, e)
-                    except Exception, e:
-                        print '(%d) error inserting %s for %s (%s)' % (stock.id, stock.symbol, date, e)
-                        pass
+                try:
+                    price = stocks.Price(stock_id=stock.id, date=date, closing_price=info['Close'], change=0)
+                    price_mapper.insert(price)
+                except MySQLdb.IntegrityError, e:
+                    print '(%d) error inserting %s for %s (%s)' % (stock.id, stock.symbol, date, e)
+                except Exception, e:
+                    print '(%d) error inserting %s for %s (%s)' % (stock.id, stock.symbol, date, e)
+                    pass
 
-                    print "price inserted for", info
+                print "price inserted for", info
 
-                rownum += 1
+            rownum += 1
 
             # break
         # break
