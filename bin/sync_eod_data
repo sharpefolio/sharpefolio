@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-import os
+import os, sys
+sys.path.append(os.path.abspath('.'))
+
 import csv
 import MySQLdb
 import datetime
