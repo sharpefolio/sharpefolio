@@ -100,7 +100,7 @@ for recipe in recipes_collection.loop():
                 break
 
             if first_price == None:
-                print 'no prices found for recipe_duration: %d recipe_formula: %s check_benchmark_id: %d for stock: %d for day %s' % (recipe.report_duration, recipe.report_formula, recipe.check_benchmark_id, stock.id, endDate)
+                print 'no prices found for report_duration: %d report_formula: %s check_benchmark_id: %d for stock: %d for day %s' % (recipe.report_duration, recipe.report_formula, recipe.check_benchmark_id, stock.id, endDate)
                 continue
 
             benchmark_prices = None
@@ -120,14 +120,14 @@ for recipe in recipes_collection.loop():
                 value = ratio.sortino()
 
             ratio_entry = reports.Ratio(stock_id=stock.id, 
-                                        recipe_duration=recipe.report_duration, 
+                                        report_duration=recipe.report_duration, 
                                         report_formula=recipe.report_formula, 
                                         check_benchmark_id=recipe.check_benchmark_id, 
                                         ratio=value, 
                                         date=first_price.date.strftime('%Y-%m-%d'))
 
             try:
-                print 'prepared recipe_duration: %d recipe_formula: %s check_benchmark_id: %d for stock: %d for day: %s value: %f' % (recipe.report_duration, recipe.report_formula, recipe.check_benchmark_id, stock.id, first_price.date, value)
+                print 'prepared report_duration: %d report_formula: %s check_benchmark_id: %d for stock: %d for day: %s value: %f' % (recipe.report_duration, recipe.report_formula, recipe.check_benchmark_id, stock.id, first_price.date, value)
                 ratio_stack.append(ratio_entry)
                 if len(ratio_stack) >= 100:
                     ratio_mapper.batch_insert(ratio_stack)
@@ -136,7 +136,7 @@ for recipe in recipes_collection.loop():
             except Exception, e:
                 ratio_stack[:] = []
                 print 'FLUSHED IT ANYWAY'
-                print 'error inserting recipe_duration: %d recipe_formula: %s check_benchmark_id: %d for stock: %d for day: %s (%s)' % (recipe.report_duration, recipe.report_formula, recipe.check_benchmark_id, stock.id, first_price.date, e)
+                print 'error inserting report_duration: %d report_formula: %s check_benchmark_id: %d for stock: %d for day: %s (%s)' % (recipe.report_duration, recipe.report_formula, recipe.check_benchmark_id, stock.id, first_price.date, e)
                 pass
 
         endDate -= datetime.timedelta(days=1)

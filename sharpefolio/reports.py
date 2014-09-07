@@ -181,7 +181,7 @@ class RecipeMysqlRepository(dm.MysqlRepository):
 
 	def find_all_ratio_combos(self):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
-		cursor.execute('SELECT * FROM `recipes` GROUP BY `recipe_duration`, `recipe_formula`, `check_benchmark_id`')
+		cursor.execute('SELECT * FROM `recipes` GROUP BY `report_duration`, `report_formula`, `check_benchmark_id`')
 		return dm.Collection(Recipe, cursor)
 
 	def truncate(self):
