@@ -76,15 +76,17 @@ class ReportMysqlRepository(dm.MysqlRepository):
 		return data
 
 class Ratio(object):
-	def __init__(self, stock_id, recipe_id, ratio, date, id = None):
+	def __init__(self, stock_id, report_duration, report_formula, check_benchmark_id, ratio, date, id = None):
 		self.id = id
 		self.stock_id = stock_id
-		self.recipe_id = recipe_id
 		self.ratio = ratio
 		self.date = date
+		self.report_duration = report_duration
+		self.report_formula = report_formula
+		self.check_benchmark_id = check_benchmark_id
 
 	def __str__(self):
-		return "stock_id: %d recipe_id: %d ratio: %d" % (self.stock_id, self.recipe_id, self.ratio)
+		return "stock_id: %d report_duration: %d report_formula: %s check_benchmark_id: %d ratio: %d" % (self.stock_id, self.report_duration, self.report_formula, self.check_benchmark_id, self.ratio)
 
 class RatioMapper(dm.Mapper):
 	def insert(self, model):
@@ -93,17 +95,17 @@ class RatioMapper(dm.Mapper):
 	def batch_insert(self, models):
 		self._repository.batch_insert(models)
 
-	def find_highest_ratio(self, recipe_id, end_date, limit):
-		return self._repository.find_highest_ratio(recipe_id, end_date, limit)
+	def find_highest_ratio(self, report_duration, report_formula, check_benchmark_id, end_date, limit):
+		return self._repository.find_highest_ratio(report_duration, report_formula, check_benchmark_id, end_date, limit)
 
 class RatioMysqlRepository(dm.MysqlRepository):
 	def insert(self, model):
 		cursor = self._database.cursor()
 		cursor.execute('\
 			INSERT INTO `ratios`\
-			(`stock_id`, `recipe_id`, `ratio`, `date`)\
-			VALUES(%s, %s, %s, %s)',
-			(model.stock_id, model.recipe_id, model.ratio, model.date)
+			(`stock_id`, `ratio`, `report_duration`, `report_formula`, `check_benchmark_id`, `date`)\
+			VALUES(%d, %f, %d, %s, %s)',
+			(model.stock_id, model.ratio, model.report_duration, model.check_benchmark_id, model.report_formula, model.date)
 		)
 		self._database.commit()
 
@@ -114,22 +116,22 @@ class RatioMysqlRepository(dm.MysqlRepository):
 		inserts = []
 		for model in models:
 			if model.ratio == model.ratio:
-				inserts.append("(%d, %s, %f, '%s')" % (model.stock_id, model.recipe_id, model.ratio, model.date))
+				inserts.append("(%d, %f, %d, '%s', %d, '%s')" % (model.stock_id, model.ratio, model.report_duration, model.report_formula, model.check_benchmark_id, model.date))
 			else:
 				# Use null if ratio is NaN.
-				inserts.append("(%d, %s, null, '%s')" % (model.stock_id, model.recipe_id, model.date))
+				inserts.append("(%d, null, %d, '%s', %d, '%s')" % (model.stock_id, model.report_duration, model.report_formula, model.check_benchmark_id, model.date))
 
 		cursor = self._database.cursor()
 		cursor.execute('\
 			INSERT IGNORE INTO `ratios`\
-			(`stock_id`, `recipe_id`, `ratio`, `date`)\
+			(`stock_id`, `ratio`, `report_duration`, `report_formula`, `check_benchmark_id`, `date`)\
 			VALUES%s;' % (','.join(inserts),)
 		)
 		self._database.commit()
 
-	def find_highest_ratio(self, recipe_id, end_date, limit):
+	def find_highest_ratio(self, report_duration, report_formula, check_benchmark_id, end_date, limit):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
-		cursor.execute('SELECT * FROM `ratios` WHERE recipe_id = %s AND `date` = %s ORDER BY ratio DESC LIMIT %s', (recipe_id, end_date.isoformat(), limit))
+		cursor.execute('SELECT * FROM `ratios` WHERE `report_duration` = %d AND `report_formula` = %s AND `check_benchmark_id` = %d AND `date` = %s ORDER BY ratio DESC LIMIT %s', (report_duration, report_formula, check_benchmark_id, end_date.isoformat(), limit))
 		return dm.Collection(Ratio, cursor)
 
 class Recipe(object):
@@ -149,8 +151,44 @@ class RecipeMapper(dm.Mapper):
 	def find_all(self):
 		return self._repository.find_all()
 
+	def find_all_ratio_combos(self):
+		return self._repository.find_all_ratio_combos()
+
 	def truncate(self):
 		self._repository.truncate()
+
+class RecipeMysqlRepository(dm.MysqlRepository):
+	def insert(self, model):
+		cursor = self._database.cursor()
+		# q = '\
+		# 	INSERT INTO `recipes`\
+		# 	(`n_stocks`, `check_correlation`, `distribution`,`report_duration`, `report_formula`)\
+		# 	VALUES(%s, %s, %s, %s, %s)' % (model.n_stocks, int(model.check_correlation), model.distribution, model.report_duration, model.report_formula)
+		# print q
+		cursor.execute('\
+			INSERT INTO `recipes`\
+			(`n_stocks`, `check_correlation`, `distribution`,`report_duration`, `report_formula`, `check_benchmark_id`)\
+			VALUES(%s, %s, %s, %s, %s, %s)',
+			(model.n_stocks, int(model.check_correlation), model.distribution, model.report_duration, model.report_formula, model.check_benchmark_id)
+		)
+		self._database.commit()
+		model.id = cursor.lastrowid
+
+	def find_all(self):
+		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
+		cursor.execute('SELECT * FROM `recipes`')
+		return dm.Collection(Recipe, cursor)
+
+	def find_all_ratio_combos(self):
+		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
+		cursor.execute('SELECT * FROM `recipes` GROUP BY `recipe_duration`, `recipe_formula`, `check_benchmark_id`')
+		return dm.Collection(Recipe, cursor)
+
+	def truncate(self):
+		cursor = self._database.cursor()
+		cursor.execute('TRUNCATE recipes')
+		self._database.commit()
+
 
 class RecipePrice(object):
 	def __init__(self, recipe_id, date, closing_price, id = None):
@@ -275,33 +313,6 @@ class RecipeRatioMysqlRepository(dm.MysqlRepository):
 		cursor.execute('SELECT * FROM `ratios` WHERE recipe_id = %s AND `date` = %s ORDER BY ratio DESC LIMIT %s', (recipe_id, end_date.isoformat(), limit))
 		return dm.Collection(Ratio, cursor)
 
-
-class RecipeMysqlRepository(dm.MysqlRepository):
-	def insert(self, model):
-		cursor = self._database.cursor()
-		# q = '\
-		# 	INSERT INTO `recipes`\
-		# 	(`n_stocks`, `check_correlation`, `distribution`,`report_duration`, `report_formula`)\
-		# 	VALUES(%s, %s, %s, %s, %s)' % (model.n_stocks, int(model.check_correlation), model.distribution, model.report_duration, model.report_formula)
-		# print q
-		cursor.execute('\
-			INSERT INTO `recipes`\
-			(`n_stocks`, `check_correlation`, `distribution`,`report_duration`, `report_formula`, `check_benchmark_id`)\
-			VALUES(%s, %s, %s, %s, %s, %s)',
-			(model.n_stocks, int(model.check_correlation), model.distribution, model.report_duration, model.report_formula, model.check_benchmark_id)
-		)
-		self._database.commit()
-		model.id = cursor.lastrowid
-
-	def find_all(self):
-		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
-		cursor.execute('SELECT * FROM `recipes`')
-		return dm.Collection(Recipe, cursor)
-
-	def truncate(self):
-		cursor = self._database.cursor()
-		cursor.execute('TRUNCATE recipes')
-		self._database.commit()
 
 class Pick(object):
 	def __init__(self, recipe_id, stock_id, weight, gain, date, id=None):

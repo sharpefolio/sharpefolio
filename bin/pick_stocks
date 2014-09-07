@@ -74,7 +74,11 @@ class Picker:
 
     def _picks_with_least_correlation(self):
         picks = {}
-        top_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.end_date, self.recipe.n_stocks * 2)
+        top_ratios = ratio_mapper.find_highest_ratio(report_duration=self.recipe.report_duration, 
+                                                     report_formula=self.recipe.report_formula,
+                                                     check_benchmark_id=self.recipe.check_benchmark_id,
+                                                     end_date=self.end_date, 
+                                                     limit=self.recipe.n_stocks * 2)
         if top_ratios.count() == 0:
             raise Exception("top ratios count is zero")
 
@@ -100,7 +104,11 @@ class Picker:
     def _picks_with_highest_ratio(self):
         picks = {}
 
-        highest_ratios = ratio_mapper.find_highest_ratio(self.recipe.id, self.end_date, self.recipe.n_stocks)
+        highest_ratios = ratio_mapper.find_highest_ratio(report_duration=self.recipe.report_duration,
+                                                         report_formula=self.recipe.report_formula,
+                                                         check_benchmark_id=self.recipe.check_benchmark_id,
+                                                         end_date=self.end_date,
+                                                         limit=self.recipe.n_stocks)
         if highest_ratios.count() == 0:
             return picks
 
