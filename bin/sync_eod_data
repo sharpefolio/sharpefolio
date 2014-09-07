@@ -52,13 +52,18 @@ for folder_path in os.listdir(path):
                     except Exception:
                         # insert new stock
                         stock = stocks.Stock(symbol=info['Symbol'], company=info['Symbol'])
-                        stock_mapper.insert(stock)
-                        stock.id = stock_mapper.get_last_insert_id()
+                        stock.id = stock_mapper.insert(stock)
 
                     date = datetime.datetime.strptime(info['Date'], '%d-%b-%Y')
 
-                    price = stocks.Price(stock_id=stock.id, date=date, closing_price=info['Close'], change=0)
-                    price_mapper.insert(price)
+                    try:
+                        price = stocks.Price(stock_id=stock.id, date=date, closing_price=info['Close'], change=0)
+                        price_mapper.insert(price)
+                    except MySQLdb.IntegrityError, e:
+                        print '(%d) error inserting %s for %s (%s)' % (stock.id, stock.symbol, date, e)
+                    except Exception, e:
+                        print '(%d) error inserting %s for %s (%s)' % (stock.id, stock.symbol, date, e)
+                        pass
 
                     print "price inserted for", info
 
