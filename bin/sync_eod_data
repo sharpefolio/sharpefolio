@@ -62,13 +62,12 @@ for file_path in os.listdir(path):
                 try:
                     price = stocks.Price(stock_id=stock.id, date=date, closing_price=info['Close'], change=0)
                     price_mapper.insert(price)
+                    print "price inserted for", info
                 except MySQLdb.IntegrityError, e:
                     print '(%d) error inserting %s for %s (%s)' % (stock.id, stock.symbol, date, e)
                 except Exception, e:
                     print '(%d) error inserting %s for %s (%s)' % (stock.id, stock.symbol, date, e)
                     pass
-
-                print "price inserted for", info
 
             rownum += 1
 
