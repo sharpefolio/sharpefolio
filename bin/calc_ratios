@@ -123,15 +123,15 @@ for recipe in recipes_collection.loop():
             else:
                 value = ratio.sortino()
 
-            ratio_entry = reports.Ratio(stock_id=stock.id, 
-                                        report_duration=recipe.report_duration, 
-                                        report_formula=recipe.report_formula, 
-                                        check_benchmark_id=recipe.check_benchmark_id, 
-                                        ratio=value, 
+            ratio_entry = reports.Ratio(stock_id=stock.id,
+                                        report_duration=recipe.report_duration,
+                                        report_formula=recipe.report_formula,
+                                        check_benchmark_id=recipe.check_benchmark_id,
+                                        ratio=value,
                                         date=first_price.date.strftime('%Y-%m-%d'))
 
             try:
-                print 'prepared report_duration: %d report_formula: %s check_benchmark_id: %d for stock: %d for day: %s value: %f' % (recipe.report_duration, recipe.report_formula, recipe.check_benchmark_id, stock.id, first_price.date, value)
+                print 'prepared recipe: %d report_duration: %d report_formula: %s check_benchmark_id: %d for stock: %d for day: %s value: %f' % (recipe.id, recipe.report_duration, recipe.report_formula, recipe.check_benchmark_id, stock.id, first_price.date, value)
                 ratio_stack.append(ratio_entry)
                 if len(ratio_stack) >= 100:
                     ratio_mapper.batch_insert(ratio_stack)
