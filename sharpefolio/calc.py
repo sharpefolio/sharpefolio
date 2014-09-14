@@ -44,9 +44,9 @@ class Ratio(object):
         # Sum it.
         self.neg_ret_sum = np.sum(self.neg_ret)
         # And calculate downside risk as second order lower partial moment.
-        self.down_risk = np.sqrt(self.neg_ret_sum / self.n_ret)
+        self.down_risk = np.sqrt(float(self.neg_ret_sum) / float(self.n_ret))
 
-        sortino = self.avg / (1 + self.down_risk)
+        sortino = float(self.avg) / float(1 + self.down_risk)
 
         return sortino
 
@@ -54,7 +54,7 @@ class Ratio(object):
 
         self.avg = np.mean(self.adj_ret)
 
-        return self.avg / (1 + self.std)
+        return float(self.avg) / float(1 + self.std)
 
     def _prepare_benchmark(self, benchmark):
 
