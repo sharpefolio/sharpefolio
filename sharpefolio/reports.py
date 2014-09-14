@@ -131,7 +131,7 @@ class RatioMysqlRepository(dm.MysqlRepository):
 
 	def find_highest_ratio(self, report_duration, report_formula, check_benchmark_id, end_date, limit):
 		cursor = self._database.cursor(MySQLdb.cursors.DictCursor)
-		cursor.execute('SELECT * FROM `ratios` WHERE `report_duration` = %d AND `report_formula` = %s AND `check_benchmark_id` = %d AND `date` = %s ORDER BY ratio DESC LIMIT %s', (report_duration, report_formula, check_benchmark_id, end_date.isoformat(), limit))
+		cursor.execute('SELECT * FROM `ratios` WHERE `report_duration` = %s AND `report_formula` = %s AND `check_benchmark_id` = %s AND `date` = %s ORDER BY ratio DESC LIMIT %s', (report_duration, report_formula, check_benchmark_id, end_date.isoformat(), limit))
 		return dm.Collection(Ratio, cursor)
 
 class Recipe(object):
